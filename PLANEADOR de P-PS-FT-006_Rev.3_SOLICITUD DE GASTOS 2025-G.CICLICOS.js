@@ -659,6 +659,7 @@ function mensual() { //funciona bien = no tocar
     "4TO LUNES DE CADA MES" : cuartoLunesDelMes,
     "4TO VIERNES DE CADA MES" : cuartoViernesDelMes,
     "9 DE CADA MES" : nueveDiaHabilDelMes,
+    "11 DE CADA MES" : onceDiaHabilDelMes
   };
 
   var salida = [];
@@ -821,6 +822,16 @@ function ultimoViernesDelMes(anio, mes) {
 
 function nueveDiaHabilDelMes(anio, mes) {//fallo ==aqui me quedo
   var fecha = new Date(anio, mes, 9);// 0=Dom, 1=Lun, 2=Mar, 3=Mié... 4=Jueves 5=viernes 6=sabado
+  if (fecha.getDay() === 6) {//sabados 
+    fecha.setDate(fecha.getDate() - 1);
+  }else if(fecha.getDay() === 0){ //y ni domingos
+      fecha.setDate(fecha.getDate() - 2);
+  }
+  return fecha;
+}
+
+function onceDiaHabilDelMes(anio, mes) {//fallo ==aqui me quedo
+  var fecha = new Date(anio, mes, 11);// 0=Dom, 1=Lun, 2=Mar, 3=Mié... 4=Jueves 5=viernes 6=sabado
   if (fecha.getDay() === 6) {//sabados 
     fecha.setDate(fecha.getDate() - 1);
   }else if(fecha.getDay() === 0){ //y ni domingos
