@@ -47,7 +47,7 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
   // Solo lee lo que existe
   //var datos = hojaOrigen.getRange(2, 2, ultimaFila - 1, 28).getValues();
   //fila 2, columna 1 = A, fila final, columna final
-  var datos = hojaOrigen.getRange(2, 1, ultimaFila - 1, 28).getValues();
+  var datos = hojaOrigen.getRange(2, 1, ultimaFila - 1, 29).getValues();
 
   // Abrir UNA VEZ archivo de destino
   var libroDestino = SpreadsheetApp.openById(hojaInfo.link);
@@ -113,7 +113,7 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
   var inicioPegado = ultimaFilaNoVaciaV1(hojaDestino);
 
   //hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 28)
-  hojaDestino.getRange(inicioPegado + 1, 1, filas.length, 28)
+  hojaDestino.getRange(inicioPegado + 1, 1, filas.length, 29)
     .setValues(filas);
 
   Logger.log(`✅ ${hojaInfo.destino}: Pegadas ${filas.length} filas.`);
