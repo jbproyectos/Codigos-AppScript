@@ -1,0 +1,525 @@
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  const email = Session.getActiveUser().getEmail();
+  const nombreUsuario = email.split('@')[0]; // Tomamos solo la parte antes del @ como nombre
+
+  const mensaje =
+    // `👋 Hola, *${nombreUsuario}*:\n\n` +
+    // `🚨 Esta es una *plantilla automatizada*. Por favor, sigue estas indicaciones:\n\n` +
+    `❌ No agregues ni elimines columnas o filas.\n` +
+    `❌ No alteres las fórmulas existentes.\n` +
+    `❌ No cambies la posición de las tablas ni los rangos definidos.\n\n` +
+    `✅ Si necesitas hacer modificaciones, contacta al equipo de *Desarrollo*.\n\n`;
+    // `🙌 ¡Gracias por seguir las instrucciones y mantener el orden!`;
+
+  // ui.alert(`Mensaje Importante`,mensaje,ui.ButtonSet.OK);
+
+  SpreadsheetApp.getActiveSpreadsheet().toast(mensaje)
+  ui.createMenu('🔄 Diario')
+    .addItem('📋 Crear Backup', 'btns')
+    .addToUi();
+}
+
+
+function btns() {
+  try {
+    // Paso 1: Mostrar columnas ocultas
+    mostrarFilasColumnasOcultas();
+    Logger.log("✔️ Columnas/filas mostradas.");
+
+    // Paso 2: Eliminar filtros
+    eliminarFiltroDeTabla();
+    Logger.log("✔️ Filtros eliminados.");
+
+    // Paso 3: Copiar archivo
+    var copiadoCorrecto = copiarArchivoASpecificFolder(); // cambia esta función para que devuelva true/false
+    if (!copiadoCorrecto) {
+      Logger.log("❌ Error en copiarArchivoASpecificFolder. Se detiene.");
+      return;
+    }
+    Logger.log("✔️ Archivo copiado y rangos limpiados.");
+
+    // Paso 4: Bloquear rangos
+    bloquearRangosEspecificos();
+    Logger.log("✔️ Rangos bloqueados.");
+
+    // SpreadsheetApp.getUi().alert("✅ Todo ejecutado correctamente.");
+
+  } catch (error) {
+    Logger.log("❌ Error en btns(): " + error.message);
+    // SpreadsheetApp.getUi().alert("Ocurrió un error: " + error.message);
+  }
+}
+
+
+
+function mostrarFilasColumnasOcultas() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+
+  // Mostrar filas ocultas
+  for (var row = 1; row <= lastRow; row++) {
+    if (sheet.isRowHiddenByUser(row)) {
+      sheet.showRows(row);
+    }
+  }
+
+  // Mostrar columnas ocultas
+  for (var column = 1; column <= lastColumn; column++) {
+    if (sheet.isColumnHiddenByUser(column)) {
+      sheet.showColumns(column);
+    }
+  }
+}
+
+
+
+function eliminarFiltroDeTabla() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName("test"); // Cambia por el nombre de la hoja que contiene la tabla
+
+  var startRow = 2; // Fila donde comienza la tabla
+  var startColumn = 1; // Columna donde comienza la tabla
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+
+  var rangeWithTable = sheet.getRange(startRow, startColumn, lastRow - startRow + 1, lastColumn - startColumn + 1);
+
+  var filter = rangeWithTable.getFilter();
+  if (filter !== null) {
+    filter.remove();
+  }
+}
+
+
+function formatRangeStyles(sheet, ranges, backgroundColor) {
+  for (var i = 0; i < ranges.length; i++) {
+    var range = sheet.getRange(ranges[i]);
+
+    // Cambiar el color de fondo
+    range.setBackground(backgroundColor);
+
+    // Cambiar el color de las letras
+    range.setFontColor('#000000'); // Cambiar a color negro (#000000)
+
+    // Cambiar el tamaño de la fuente
+    range.setFontSize(12); // Cambiar a tamaño de fuente 12
+  }
+}
+
+
+function restaurarFormulasFijasW46_AB86(hojaBackup) {
+  // Limpia validaciones de todos los rangos implicados
+  // const rangosConValidacion = [
+  //   "W46:AB86", "E95:E1000", "H95:H1000", "N95:N1000",
+  //   "R95:R1000", "T95:T1000", "V95:V1000"
+  // ];
+  // rangosConValidacion.forEach(rango => {
+  //   hojaBackup.getRange(rango).clearDataValidations();
+  // });
+
+  // === Rango W46:AB86 ===
+  for (var fila = 46; fila <= 86; fila++) {
+    hojaBackup.getRange("Y" + fila).setFormula(`=IFERROR(VLOOKUP($X${fila},LISTA!$X$1:$AA$13,2,0),"")`);
+    hojaBackup.getRange("Z" + fila).setFormula(`=IF(W${fila},TODAY(),"")`);
+    hojaBackup.getRange("AA" + fila).setFormula(`=IFERROR(VLOOKUP($X${fila},LISTA!$X$1:$AA$13,3,0),"")`);
+    hojaBackup.getRange("AB" + fila).setFormula(`=IFERROR(VLOOKUP($X${fila},LISTA!$X$1:$AA$13,4,0),"")`);
+  }
+
+  // === Rango E95:E1000 ===
+  for (var fila = 95; fila <= 1000; fila++) {
+    hojaBackup.getRange("E" + fila).setFormula(`=IF(D${fila}>0,"EFEVO",IF(D${fila}<0,"BANCARIZADO",IF(D${fila}=0,"")))`);
+  }
+
+  // === Rango H95:H1000 ===
+  for (var fila = 95; fila <= 1000; fila++) {
+    hojaBackup.getRange("H" + fila).setFormula(
+      `=IFERROR(IF(E${fila}="BANCARIZADO",` +
+      `VLOOKUP(F${fila},LISTA!$Q$1:$T$44,4,FALSE),` +
+      `IF(E${fila}="EFEVO",VLOOKUP(F${fila},LISTA!$Q$1:$T$44,2,FALSE),` +
+      `IF(E${fila}="SALDO",VLOOKUP(F${fila},LISTA!$Q$1:$T$44,2,FALSE),""))))`
+    );
+  }
+
+  // === Rango N95:N1000 ===
+  for (var fila = 95; fila <= 1000; fila++) {
+    hojaBackup.getRange("N" + fila).setFormula(
+      `=IFERROR(VLOOKUP($K${fila},LISTA!$B$2:$D$300,3,0),"")`
+    );
+  }
+
+// === Rango R95:R1000 ===
+for (var fila = 95; fila <= 1000; fila++) {
+  // Generamos la fórmula con todos los IFs anidados
+  var formula = `=IFERROR(` +
+    `IF(Q${fila}="TRASPASO", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="DIVISAS", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="ABONO NO RECONOCIDO", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="COMISIONES BANCARIAS", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="CARGO NO RECONOCIDO", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="IMPUESTOS", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 3, FALSE),` +
+    `IF(Q${fila}="PAGO DIRECTO", VLOOKUP(Q${fila}, LISTA!$X$2:$AA$13, 2, FALSE),` +
+    `IF(Q${fila}="COMISION PAGO DIRECTO", VLOOKUP(Q${fila}, LISTA!$X$2:$AA$13, 2, FALSE),` +
+    `""` +
+    `))))))))` +
+  `)`;
+
+  // Aplicar la fórmula generada a la celda correspondiente en la columna R
+  hojaBackup.getRange("R" + fila).setFormula(formula);
+}
+
+
+
+  // =IFERROR(
+  //  IF(Q99="TRASPASO",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="DIVISAS",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="ABONO NO RECONOCIDO",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="COMISIONES BANCARIAS",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="CARGO NO RECONOCIDO",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="IMPUESTOS",
+  //     VLOOKUP(Q99,LISTA!$AC$2:$AG$22,3,FALSE),IF(Q99="PAGO DIRECTO",VLOOKUP(Q99,LISTA!$X$2:$AA$13,2,FALSE),IF(Q99="COMISION PAGO DIRECTO",VLOOKUP(Q99,LISTA!$X$2:$AA$13,2,FALSE),"")))))))))
+
+  // === Rango T95:T1000 ===
+  for (var fila = 95; fila <= 1000; fila++) {
+    hojaBackup.getRange("T" + fila).setFormula(
+      `=IFERROR(IF(Q${fila}="TRASPASO",VLOOKUP(Q${fila},LISTA!$AJ$2:$AN,5,FALSE),""))`
+    );
+  }
+
+  // === Rango V95:V1000 ===
+for (var fila = 95; fila <= 1000; fila++) {
+  // Generamos la fórmula con todos los IFs anidados
+  var formula = `=IFERROR(` +
+    `IF(Q${fila}="ABONO NO RECONOCIDO", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 2, FALSE),` +
+    `IF(Q${fila}="SPEI", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 2, FALSE),` +
+    `IF(Q${fila}="COMISIONES BANCARIAS", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 2, FALSE),` +
+    `IF(Q${fila}="CARGO NO RECONOCIDO", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 2, FALSE),` +
+    `IF(Q${fila}="NOMINA INTERNA", VLOOKUP(Q${fila}, LISTA!$AC$2:$AG$22, 2, FALSE),` +
+    `IF(Q${fila}="TRASPASO", VLOOKUP(S${fila}, LISTA!$B$2:$D$300, 3, FALSE),` +
+    `IF(Q${fila}="DIVISAS", VLOOKUP(S${fila}, LISTA!$B$2:$D$300, 3, FALSE),` +
+    `""` +
+    `)))))))` +
+  `)`;
+
+  // Aplicar la fórmula generada a la celda correspondiente en la columna V
+  hojaBackup.getRange("V" + fila).setFormula(formula);
+}
+
+}
+
+
+
+function copiarArchivoASpecificFolder() {
+  const userEmail = Session.getActiveUser().getEmail();
+  const allowedEmails = [
+    "contacto@kabzo.org", "atencion@kabzo.org", "servicios@kabzo.org",
+    "consultores@kabzo.org", "asesores@kabzo.org", "asesorescarso1@gmail.com",
+    "projectmanager@kabzo.org", "desarrollo@kabzo.org",
+    "solicitud@gruposecley.com", "atencion@gruposecley.com",
+    "documentos@gruposecley.com", "asistencia@kabzo.org",
+    "receptor@kabzo.org", "pagos@kabzo.org", "administradora@kabzo.org"
+  ];
+
+  if (!allowedEmails.includes(userEmail)) {
+    // SpreadsheetApp.getUi().alert("No tienes permiso para ejecutar esta función. Por favor, contacta con la MESA.");
+    return false;
+  }
+
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const originalSheet = spreadsheet.getSheetByName("test");
+
+  const file = DriveApp.getFileById(spreadsheet.getId());
+  const folders = file.getParents();
+
+  if (!folders.hasNext()) {
+    Logger.log("El archivo no se encuentra en ninguna carpeta.");
+    return false;
+  }
+
+  const folder = folders.next();
+  const currentDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
+  const newName = spreadsheet.getName() + " - " + currentDate;
+
+  const copy = file.makeCopy(newName, folder);
+  const newSpreadsheet = SpreadsheetApp.openById(copy.getId());
+  const newSheet = newSpreadsheet.getSheetByName("test");
+
+  // 1️⃣ Limpiar rangos en la copia (newSheet)
+  const rangesToClear = [
+    "D6:U83", "D95:D1000", "F95:F1000", "J95:M1000", "P95:Q1000", "r95:r1000",
+    "S95:S1000", "t95:t1000", "v95:v1000", "X95:AA1000", "W46:AB86",
+    "Q95:Q1000", "X46:X86", "W87"
+  ];
+  rangesToClear.forEach(range => newSheet.getRange(range).clearContent());
+
+  // 2️⃣ Limpiar rangos en hoja "1"
+  const secondSheet = newSpreadsheet.getSheetByName("1");
+  const rangesToClearInSecondSheet = [
+    "f2:K300", "f303:K343", "R2:X300", "R303:X343",
+    "N2:N300", "N303:N343", "D2:D300", "d303:d343",
+    "s2:s300", "s303:s343", "t2:x300", "t303:w343"
+  ];
+  rangesToClearInSecondSheet.forEach(range => secondSheet.getRange(range).clearContent());
+
+  // 3️⃣ Bloquear rangos en hoja "1"
+  const rangosABloquear = ["L:M", "O:O"];
+  rangosABloquear.forEach(rango => {
+    try {
+      const r = secondSheet.getRange(rango);
+      const proteccion = r.protect().setDescription('Bloqueado automáticamente');
+      proteccion.getEditors().forEach(editor => proteccion.removeEditor(editor));
+      if (proteccion.canDomainEdit()) proteccion.setDomainEdit(false);
+    } catch (e) {
+      Logger.log("Error bloqueando el rango " + rango + ": " + e.message);
+    }
+  });
+
+  // 4️⃣ Copiar datos fijos de D87:U87 a D5 en la copia
+  const datos = originalSheet.getRange("D87:U87").getValues();
+  newSheet.getRange("D5").offset(0, 0, datos.length, datos[0].length).setValues(datos);
+
+  // 5️⃣ Convertir ciertos rangos a texto plano en el archivo ORIGINAL
+  const rangosAConvertir = ["C1", "G95:G1000", "U95:U1000", "AB95:AB1000", "Z5:Z86"];
+  rangosAConvertir.forEach(rango => {
+    const r = originalSheet.getRange(rango);
+    const valoresPlano = r.getDisplayValues(); // toma lo visible
+    r.setValues(valoresPlano); // sobrescribe como texto
+  });
+  restaurarFormulasFijasW46_AB86(newSheet);
+
+  return true;
+}
+
+
+
+// function copiarArchivoASpecificFolder() {
+//   var userEmail = Session.getActiveUser().getEmail();
+//   var allowedEmails = [
+//     "contacto@kabzo.org",
+//     "atencion@kabzo.org",
+//     "servicios@kabzo.org",
+//     "consultores@kabzo.org",
+//     "asesores@kabzo.org",
+//     "asesorescarso1@gmail.com",
+//     "projectmanager@kabzo.org",
+//     "desarrollo@kabzo.org",
+//     "solicitud@gruposecley.com",
+//     "atencion@gruposecley.com",
+//     "documentos@gruposecley.com",
+//     "asistencia@kabzo.org",
+//     "receptor@kabzo.org",
+//     "pagos@kabzo.org",
+//     "administradora@kabzo.org"
+//   ];
+
+//   if (!allowedEmails.includes(userEmail)) {
+//     SpreadsheetApp.getUi().alert("No tienes permiso para ejecutar esta función. Por favor, contacta con la MESA.");
+//     return false;
+//   }
+
+
+//   var sheet = SpreadsheetApp.getActiveSpreadsheet();
+//   var sheetId = sheet.getId();
+//   var file = DriveApp.getFileById(sheetId);
+//   var folders = file.getParents();
+
+//   if (folders.hasNext()) {
+//     var folder = folders.next();
+//     var folderId = folder.getId();
+//     var currentDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
+//     var newName = sheet.getName() + " - " + currentDate;
+//     var copy = file.makeCopy(newName, DriveApp.getFolderById(folderId));
+//     var newFileId = copy.getId();
+//     var newSpreadsheet = SpreadsheetApp.openById(newFileId);
+//     var newSheet = newSpreadsheet.getSheetByName("test");
+
+//     var rangesToClear = [
+//       "D6:U83",
+//       "D95:D1000",
+//       "F95:F1000",
+//       "J95:M1000",
+//       "P95:Q1000",
+//       "r95:r1000",
+//       "S95:S1000",
+//       "t95:t1000",
+//       "v95:v1000",
+//       "X95:AA1000",
+//       // "W46:X86"
+//       "W46:AB86",
+//       "Q95:Q1000",
+//       'X46:X86',
+//       "W87" // ✅ Celda individual
+
+//     ];
+
+//     rangesToClear.forEach(function (range) {
+//       newSheet.getRange(range).clearContent();
+//     });
+
+
+//     var secondSheet = newSpreadsheet.getSheetByName("1");
+
+//     var rangesToClearInSecondSheet = [
+//       "f2:K300", "f303:K343",
+//       "R2:X300", "R303:X343",
+//       "N2:N300", "N303:N343",
+//       "D2:D300", "d303:d343",
+//       "s2:s300", "s303:s343",
+//       "t2:x300", "t303:w343",
+//     ];
+
+//     rangesToClearInSecondSheet.forEach(function (range) {
+//       secondSheet.getRange(range).clearContent();
+//     });
+
+//     restaurarFormulasFijasW46_AB86(newSheet);
+
+
+//     // ⛔ BLOQUEAR LOS RANGOS L:M y O:O en la hoja "1"
+//     var rangosABloquear = ["L:M", "O:O"];
+//     rangosABloquear.forEach(function (rango) {
+//       try {
+//         var r = secondSheet.getRange(rango);
+//         var proteccion = r.protect().setDescription('Bloqueado automáticamente');
+
+//         var editores = proteccion.getEditors();
+//         editores.forEach(function (editor) {
+//           proteccion.removeEditor(editor);
+//         });
+
+//         if (proteccion.canDomainEdit()) {
+//           proteccion.setDomainEdit(false);
+//         }
+//       } catch (e) {
+//         Logger.log("Error bloqueando el rango " + rango + ": " + e.message);
+//       }
+//     });
+
+//     var originalSheet = sheet.getSheetByName("test");
+//     var dataToCopy = originalSheet.getRange("D87:U87").getValues();
+//     newSheet.getRange("D5").offset(0, 0, dataToCopy.length, dataToCopy[0].length).setValues(dataToCopy);
+//     return true;
+
+//   } else {
+//     Logger.log("El archivo no se encuentra en ninguna carpeta.");
+//     return false;
+
+//   }
+// }
+
+
+
+
+
+
+
+//modificado 09/07/2025 por rangos especificos
+function bloquearRangosEspecificos() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+
+  var rangosPorHoja = {
+    "1": [
+      "L:L",
+      "O:Q",
+      "Y:Y",
+      "M345:Y346",
+      "1:1",
+      "302:302"
+    ],
+    "test": [
+      "C1:AT1",
+      "A3:B",
+      "D5:U5",
+      "D84:U84",
+      "D86:U89",
+      "D93:AB94",
+      "D1001:AB1001",
+      "W3:AB45",
+      "AB46:AB86",
+      "AG3:AN11"
+    ]
+  };
+
+  for (var nombreHoja in rangosPorHoja) {
+    var hoja = spreadsheet.getSheetByName(nombreHoja);
+    if (!hoja) {
+      Logger.log("❌ No se encontró la hoja: " + nombreHoja);
+      continue;
+    }
+
+    Logger.log("🔒 Procesando hoja: " + nombreHoja);
+    var rangos = rangosPorHoja[nombreHoja];
+
+    for (var i = 0; i < rangos.length; i++) {
+      var rangoTexto = rangos[i];
+      try {
+        var rango = hoja.getRange(rangoTexto);
+        var proteccion = rango.protect().setDescription('Bloqueo de rango automático');
+
+        var editores = proteccion.getEditors();
+        for (var j = 0; j < editores.length; j++) {
+          proteccion.removeEditor(editores[j]);
+        }
+
+        if (proteccion.canDomainEdit()) {
+          proteccion.setDomainEdit(false);
+        }
+
+        Logger.log("✅ Rango bloqueado correctamente: " + nombreHoja + " - " + rangoTexto);
+
+      } catch (e) {
+        Logger.log("⚠️ Error bloqueando el rango " + rangoTexto + " en hoja " + nombreHoja + ": " + e.message);
+      }
+    }
+  }
+}
+
+
+
+
+function copiarYpegarDatos() {
+  var archivoOrigen = SpreadsheetApp.getActiveSpreadsheet(); // Archivo actual
+  var hojaOrigen = archivoOrigen.getSheetByName("test"); // Hoja de origen
+  var rangoOrigen = hojaOrigen.getRange("AG5:AN11");
+  var datos = rangoOrigen.getValues(); // Obtener datos del rango
+  var formatos = rangoOrigen.getBackgrounds(); // Obtener colores de fondo del rango
+
+  var archivoDestinoId = "1sWV2HXIcrfaJWOZWRqW_xyVwtRamidQHfJBJpzexbdg"; // ID del archivo de destino
+  var archivoDestino = SpreadsheetApp.openById(archivoDestinoId); // Abrir el archivo de destino
+  var hojaDestino = archivoDestino.getSheetByName("CONCENTRADO2024"); // Hoja de destino
+  var ultimaFila = hojaDestino.getLastRow() + 1;
+  var fechaActual = new Date();
+
+  var nombreArchivoOrigen = archivoOrigen.getName();
+  for (var i = 0; i < datos.length; i++) {
+    var filaDestino = ultimaFila + i;
+    var rangoDestino = hojaDestino.getRange(filaDestino, 1, 1, datos[0].length);
+    rangoDestino.setValues([datos[i]]);
+    rangoDestino.setBackgrounds([formatos[i]]);
+    hojaDestino.getRange(filaDestino, 9).setValue(fechaActual);
+    hojaDestino.getRange(filaDestino, 10).setValue(nombreArchivoOrigen);
+  }
+}
+
+function eliminarTodosLosBloqueos() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hojas = ss.getSheets();
+
+  hojas.forEach(function (hoja) {
+    var protecciones = hoja.getProtections(SpreadsheetApp.ProtectionType.RANGE)
+      .concat(hoja.getProtections(SpreadsheetApp.ProtectionType.SHEET));
+
+    protecciones.forEach(function (proteccion) {
+      try {
+        proteccion.remove();
+        Logger.log("✅ Bloqueo eliminado en hoja: " + hoja.getName());
+      } catch (e) {
+        Logger.log("❌ Error eliminando protección en hoja " + hoja.getName() + ": " + e.message);
+      }
+    });
+  });
+
+  // SpreadsheetApp.getUi().alert("Todos los bloqueos han sido eliminados.");
+}
