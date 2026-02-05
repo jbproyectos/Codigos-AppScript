@@ -6,7 +6,7 @@ function onOpen() {
     + "\n- 🚫 No alterar fórmulas."
     + "\n- 🚫 No modificar la posición de las tablas o el rango."
     + "\n- ✅ Para un uso adecuado del archivo consulta tu instrucción de trabajo P-PS-IT-002_ SOLICITUD DE GASTOS DESPACHO DIRECCIÓN SOLICITANTE"
-    + "\n- ☎︎ Contacta a 'Optimización' para realizar modificaciones. V16";
+    + "\n- ☎︎ Contacta a 'Optimización' para realizar modificaciones. V25";
 
   ui.alert(mensaje);
 
@@ -15,6 +15,20 @@ function onOpen() {
     .addItem('1. Informacion del Temporal| 📄', 'ExtraerInfoTemp')
     .addItem('2. Backup del 5-R | 📁', 'allFunct')
     .addToUi();
+
+     ui.
+    createMenu("PAPELETAS"). // 5R
+    addItem("Papeletas 5R","mandarInfoPapeletasDir").
+    // addItem("Papeletas 10R","mandarInfoPapeletasPer").
+    addItem("Borrar 5R","borrar5R").
+    // addItem("Borrar 10R","borrar10R").
+    addToUi();
+
+    //boton para tarjetas
+    ui.
+    createMenu("TARJETAS"). // 5R
+    addItem("CARGO DE TARJETAS","accion").
+    addToUi();
 }
 
 function ExtraerInfoTemp(){
@@ -472,4 +486,151 @@ function moverArchivo() {//implementacion 07/10/2025
 }
  
 
+}
+/////////////////////////CARGO DE TARJETAS////////////////////////
+function accion(){
+  var libroOrigen = SpreadsheetApp.openById('1IBgDOupqxGimF0a-SLR9vKKLPE0tWqlHHYanczLEm8o'); // CARGO DE TARJETAS
+  var hojaOrigen = libroOrigen.getSheetByName("CARGOS");
+
+  BLOQUEO.agrandarRangoBloqueoCondicionalV2(hojaOrigen);
+  tarjetas01();
+}
+
+function tarjetas01() { //boton para llevar la informacion.
+  var libroOrigen = SpreadsheetApp.openById('1IBgDOupqxGimF0a-SLR9vKKLPE0tWqlHHYanczLEm8o'); // CARGO DE TARJETAS
+  var hojaOrigen = libroOrigen.getSheetByName("CARGOS");
+
+  var libroDestino = SpreadsheetApp.getActiveSpreadsheet(); // G1 = 5R
+  var hojaDestino = libroDestino.getSheetByName("ENTRECUENTAS G1");
+
+
+  var rango = hojaOrigen.getRange("B4:K").getValues();
+
+
+  //fecha de comparacion
+  var today = new Date();
+  var fomateoToday = Utilities.formatDate(today, Session.getScriptTimeZone(), 'dd/MM/yy');
+
+  // Preparar un arreglo para las filas que cumplen las condiciones
+  var filasParaPegar = [];
+
+  for (var i = 0; i < rango.length; i++) {
+    var dataFecha = rango[i][6]; // Columna AB (índice 27) //28 a 29
+
+    // Validar si el dato en la columna AB es una fecha válida
+    if (dataFecha instanceof Date && !isNaN(dataFecha.getTime())) {
+      var fomateoFecha = Utilities.formatDate(dataFecha, Session.getScriptTimeZone(), 'dd/MM/yy');
+        //if (fomateoFecha === fomateoToday) { //27 a 28
+        if (fomateoFecha === fomateoToday) { //27 a 28
+          // Verificar condiciones en la columna Z (índice 26)
+          if (rango[i][7] === "GASTOS") {
+            filasParaPegar.push(rango[i]); // Añadir fila para pegar
+          }
+        }
+      
+    }
+  }
+
+  if (filasParaPegar.length > 0) {
+
+    //P93:U126 
+    var inicioFila = 93;
+    var maxFilas = 126 - 93 + 1; 
+
+    var datosDestino = hojaDestino.getRange(93, 16, 126 - 93 + 1, 126).getValues();
+
+    var ultimaFilaDestino = 93;
+
+    for (var i = 0; i < datosDestino.length; i++) {
+      var fila = datosDestino[i];
+      if (fila.some(function (cell) { return cell !== "" && cell !== null; })) {
+        ultimaFilaDestino = inicioFila + i + 1;
+      }
+    }
+
+    var filaDestino = ultimaFilaDestino;
+
+    if (filasParaPegar.length > maxFilas) {
+      filasParaPegar = filasParaPegar.slice(0, maxFilas);
+      Logger.log("Se truncaron los datos para ajustarse al rango permitido.");
+    }
+
+    var forTodayFol = Utilities.formatDate(today,Session.getScriptTimeZone(), 'ddMMyy');
+
+    const filasParaPegar2 = filasParaPegar.map(r => {//negativo //numero  NL1912250013852
+     //consecutivo++; // aumenta por cada fila
+
+      //secuencia por polimorfismo.
+      var secuencia = generarFolioCentral();
+      
+      // rellena con ceros a la izquierda → 0013841
+      var secuenciaStr = String(secuencia).padStart(7, '0');
+
+      var folio = 'NL' + forTodayFol + secuenciaStr;// 30/01/2026 modificacion
+
+      const s = String(r[0] ?? '');
+      const sClean = s.replace(/^-?/, ''); // quita signo si existe
+      return [ '-' + sClean, r[1], r[2], r[3], r[6], folio];
+    });
+
+    const filasParaPegar3 = filasParaPegar.map(r => { //positivo
+      return [ r[0], r[1], r[2], r[3], r[6], r[5]  ];
+    });
+
+    //negativo
+    const rangoTransformado2 = hojaDestino.getRange(filaDestino, 16, filasParaPegar2.length, filasParaPegar2[0].length);
+    rangoTransformado2.setValues(filasParaPegar2);
+    
+
+    //ultima dila destino
+    var ultimaColDest = ultimaFilaNoVaciaV10(hojaDestino);
+
+    //positivo
+    const rangoTransformado3 = hojaDestino.getRange(ultimaColDest + 1, 2, filasParaPegar3.length, filasParaPegar3[0].length);
+    rangoTransformado3.setValues(filasParaPegar3);
+  }
+
+  //var fechaReporte = //FECHA EN QUE SE REPORTA 
+}
+
+function ultimaFilaNoVaciaV10(hoja) {
+  if (!hoja) {
+    Logger.log("La hoja "+ hoja + " no existe.");
+    return;
+  }
+  
+  const columna = hoja.getRange("C:C").getValues(); // Obtiene todos los valores de la columna B
+  let ultimaFila = 0;
+
+  // Iterar desde el final hacia arriba para encontrar la última fila con datos
+  for (let i = columna.length - 1; i >= 0; i--) {
+    if (columna[i][0] !== "") {
+      ultimaFila = i + 1; // +1 porque los índices comienzan en 0
+      break;
+    }
+  }
+
+  return ultimaFila;
+}
+
+
+function generarFolioCentral() {
+  var url = 'https://script.google.com/macros/s/AKfycbznW7LYWaQiClbYtRhSaflmzbqiwekGbrbcu8_l8DFdhYyTba3U6NY-Ofg8cQFppjWRlw/exec'; // /exec
+
+  var response = UrlFetchApp.fetch(url, {
+    method: 'post',
+    muteHttpExceptions: true
+  });
+
+  var codigo = response.getResponseCode();
+  var texto = response.getContentText();
+
+  if (codigo !== 200) {
+    throw new Error(
+      'Error al generar folio. Código: ' + codigo + 
+      ' Respuesta: ' + texto
+    );
+  }
+
+  return Number(texto);
 }
