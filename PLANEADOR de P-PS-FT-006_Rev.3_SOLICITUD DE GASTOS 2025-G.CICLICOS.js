@@ -55,6 +55,8 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
 
   var fechaHoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yy');
 
+  var generarF;
+
   // Filtro inteligente en una sola pasada
   var filas = datos.filter(function (fila) {
 
@@ -66,7 +68,16 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
     if (Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd/MM/yy') !== fechaHoy)
       return false;
 
-    fecha === Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd-MM-yyyy HH:mm:ss')
+    fecha === Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd-MM-yyyy HH:mm:ss');
+
+       //actualizacion de fecha 11/02/2026
+    var ahora = new Date();
+    // Formateamos solo la hora (HH:mm:ss)
+    var hora = Utilities.formatDate(ahora, Session.getScriptTimeZone(), "HH:mm:ss");
+    var fecha2 = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yy');
+    Logger.log("fecha " +fecha2 + " " + hora);
+
+    generarF = fecha2 + " "+ hora;
 
     var persona = fila[2];
     var area = fila[4]; //uso
@@ -115,6 +126,8 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
   //hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 28)
   hojaDestino.getRange(inicioPegado + 1, 1, filas.length, 29)
     .setValues(filas);
+
+  hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 1).setValue(generarF);//poner la fecha y la hora juntas.
 
   Logger.log(`✅ ${hojaInfo.destino}: Pegadas ${filas.length} filas.`);
 }
