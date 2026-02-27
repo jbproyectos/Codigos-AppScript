@@ -1,5 +1,5 @@
 /**
- * Función principal que se ejecutará por el trigger temporal
+ * Función principal que se ejecutará por el trigger temporal - modificable para agregar mas correos a leer
  */
 function obtenerCorreosDeTodasLasCuentas() {
   const cuentas = [
