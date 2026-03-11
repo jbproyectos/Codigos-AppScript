@@ -3,7 +3,9 @@ function onEdit(e) {
   const hoja = e.range.getSheet();
   const nombre = hoja.getName();
 
-  if (nombre !== "PRODUCTIVIDAD_ENTREGAS" && nombre !== "PRODUCTIVIDAD_TESORERIA") return;
+  if (nombre !== "PRODUCTIVIDAD DOMICILIOS" 
+    && nombre !== "PRODUCTIVIDAD BANCOS"
+    && nombre !== "PRODUCTIVIDAD MANTENIMIENTO") return;
 
   if (e.range.getNumRows() > 1 || e.range.getNumColumns() > 1) return;
 
