@@ -1,0 +1,288 @@
+/**
+ * SCRIPT PARA COPIAR HOJAS DESDE EL ARCHIVO ACTIVO AL ARCHIVO DESTINO
+ * Autor: juan bautista
+ * Versión: 7.0 - Copia hojas completas SIN depender de array desactualizado
+ */
+
+// ID del archivo destino (fijo)
+const DESTINO_ID = '1sC05C8tkaGaKtjWlnP_-dPxr4mFVbUs4soUATk8HwGk';
+
+// Configuración
+const CONFIG = {
+  // Patrones de nombres de hojas a buscar (sin fechas)
+  patrones: [
+    'MOVS DIARIOS',
+    'EC SD',
+    'CONCENTRADO',
+    'G1',
+    'G2',
+    'G3'
+  ],
+  separadorFecha: ' '
+};
+
+
+/**
+ * FUNCIÓN PRINCIPAL - Copia hojas completas
+ */
+function copiarHojasActivasPRUEBAS() {
+  const log = [];
+  const timestamp = new Date();
+  log.push(`=== INICIO PROCESO: ${timestamp} ===`);
+  
+  try {
+    const activo = SpreadsheetApp.getActiveSpreadsheet();
+    const destino = SpreadsheetApp.openById(DESTINO_ID);
+    
+    log.push(`📁 Archivo ACTIVO: ${activo.getName()}`);
+    log.push(`📁 Archivo DESTINO: ${destino.getName()}`);
+    
+    // Obtener todas las hojas del activo
+    const todasLasHojas = activo.getSheets();
+    log.push(`📄 Total de hojas en ACTIVO: ${todasLasHojas.length}`);
+    
+    // Filtrar hojas que coinciden con patrones
+    const hojasEncontradas = filtrarHojasPorPatron(todasLasHojas, log);
+    log.push(`🔍 Hojas a procesar: ${hojasEncontradas.length}`);
+    
+    if (hojasEncontradas.length === 0) {
+      activo.toast('⚠️ No se encontraron hojas para copiar', 'ERROR', 5);
+      mostrarLogCompleto(log, activo);
+      return;
+    }
+    
+    hojasEncontradas.forEach(hoja => {
+      log.push(`   ✅ ${hoja.getName()}`);
+    });
+    
+    activo.toast(`🚀 Procesando ${hojasEncontradas.length} hojas...`, 'ACTUALIZANDO', 3);
+    
+    const resultados = {
+      copiadas: [],
+      eliminadas: [],
+      errores: []
+    };
+    
+    // Procesar CADA hoja individualmente
+    for (const hojaOrigen of hojasEncontradas) {
+      try {
+        const nombreOriginal = hojaOrigen.getName();
+        const nombreBase = obtenerNombreBase(nombreOriginal);
+        
+        log.push(`\n--- Procesando: ${nombreOriginal} (Base: ${nombreBase}) ---`);
+        
+        // BUSCAR si existe una hoja con la misma BASE en destino (búsqueda fresca)
+        const hojasDestinoActual = destino.getSheets();
+        let hojaExistente = null;
+        
+        for (const hojaDest of hojasDestinoActual) {
+          const nombreDestBase = obtenerNombreBase(hojaDest.getName());
+          if (nombreDestBase === nombreBase) {
+            hojaExistente = hojaDest;
+            break;
+          }
+        }
+        
+        // Si existe, eliminarla
+        if (hojaExistente) {
+          log.push(`   🗑️ Eliminando hoja existente: ${hojaExistente.getName()}`);
+          destino.deleteSheet(hojaExistente);
+          resultados.eliminadas.push(`${nombreBase} (era: ${hojaExistente.getName()})`);
+        } else {
+          log.push(`   ℹ️ No existe hoja con base ${nombreBase}, se copiará nueva`);
+        }
+        
+        // COPIAR la hoja completa (con todo y formato)
+        log.push(`   📋 Copiando hoja COMPLETA: ${nombreOriginal}`);
+        const hojaCopiada = hojaOrigen.copyTo(destino);
+        
+        // Asegurar el nombre correcto
+        hojaCopiada.setName(nombreOriginal);
+        log.push(`   ✅ Hoja copiada exitosamente como: ${nombreOriginal}`);
+        
+        resultados.copiadas.push(nombreOriginal);
+        
+      } catch (error) {
+        const errorMsg = `${hojaOrigen.getName()}: ${error.message}`;
+        log.push(`   ❌ ERROR: ${errorMsg}`);
+        log.push(`   Stack: ${error.stack}`);
+        resultados.errores.push(errorMsg);
+      }
+    }
+    
+    // Verificar resultado final
+    const hojasDestinoFinal = destino.getSheets();
+    log.push(`\n📄 Total de hojas en DESTINO después: ${hojasDestinoFinal.length}`);
+    log.push(`📋 Hojas finales en DESTINO:`);
+    hojasDestinoFinal.forEach(hoja => {
+      log.push(`   - ${hoja.getName()}`);
+    });
+    
+    // Mostrar resumen
+    let mensaje = '✅ PROCESO COMPLETADO\n\n';
+    
+    if (resultados.copiadas.length > 0) {
+      mensaje += `📋 COPIADAS (${resultados.copiadas.length}):\n`;
+      resultados.copiadas.forEach(h => {
+        mensaje += `   • ${h}\n`;
+      });
+      mensaje += `\n`;
+    }
+    
+    if (resultados.eliminadas.length > 0) {
+      mensaje += `🗑️ ELIMINADAS (${resultados.eliminadas.length}):\n`;
+      resultados.eliminadas.forEach(h => {
+        mensaje += `   • ${h}\n`;
+      });
+      mensaje += `\n`;
+    }
+    
+    if (resultados.errores.length > 0) {
+      mensaje += `❌ ERRORES (${resultados.errores.length}):\n`;
+      resultados.errores.forEach(e => {
+        mensaje += `   • ${e}\n`;
+      });
+    }
+    
+    log.push(`\n=== RESUMEN FINAL ===`);
+    log.push(`✅ Copiadas: ${resultados.copiadas.length}`);
+    log.push(`🗑️ Eliminadas: ${resultados.eliminadas.length}`);
+    log.push(`❌ Errores: ${resultados.errores.length}`);
+    
+    activo.toast(mensaje, 'RESULTADO FINAL', 10);
+    mostrarLogCompleto(log, activo);
+    
+  } catch (error) {
+    const activo = SpreadsheetApp.getActiveSpreadsheet();
+    log.push(`❌ ERROR CRÍTICO: ${error.message}`);
+    log.push(`Stack: ${error.stack}`);
+    activo.toast(`❌ Error: ${error.message}`, 'ERROR', 5);
+    mostrarLogCompleto(log, activo);
+  }
+}
+
+/**
+ * Filtra las hojas que coinciden con los patrones
+ */
+function filtrarHojasPorPatron(hojas, log) {
+  const hojasEncontradas = [];
+  
+  log.push(`\n🔍 Filtrando hojas por patrones:`);
+  
+  for (const hoja of hojas) {
+    const nombre = hoja.getName();
+    const nombreUpper = nombre.toUpperCase();
+    let coincidio = false;
+    
+    for (const patron of CONFIG.patrones) {
+      const patronUpper = patron.toUpperCase();
+      
+      // Coincidencia exacta o con fecha
+      if (nombreUpper === patronUpper || 
+          nombreUpper.startsWith(patronUpper + CONFIG.separadorFecha)) {
+        hojasEncontradas.push(hoja);
+        coincidio = true;
+        log.push(`   ✅ "${nombre}" → coincide con patrón: ${patron}`);
+        break;
+      }
+    }
+    
+    if (!coincidio) {
+      log.push(`   ❌ "${nombre}" → no coincide`);
+    }
+  }
+  
+  return hojasEncontradas;
+}
+
+/**
+ * Obtiene el nombre base sin fecha
+ */
+function obtenerNombreBase(nombreCompleto) {
+  const nombreUpper = nombreCompleto.toUpperCase();
+  
+  for (const patron of CONFIG.patrones) {
+    const patronUpper = patron.toUpperCase();
+    
+    if (nombreUpper === patronUpper || 
+        nombreUpper.startsWith(patronUpper + CONFIG.separadorFecha)) {
+      return patron;
+    }
+  }
+  
+  return nombreCompleto;
+}
+
+/**
+ * Muestra el log completo en una hoja nueva
+ */
+function mostrarLogCompleto(log, activo) {
+  try {
+    let hojaLog = activo.getSheetByName('📋 LOG_COPIA_HOJAS');
+    
+    if (hojaLog) {
+      activo.deleteSheet(hojaLog);
+    }
+    
+    hojaLog = activo.insertSheet('📋 LOG_COPIA_HOJAS');
+    
+    // Escribir el log línea por línea
+    for (let i = 0; i < log.length; i++) {
+      hojaLog.getRange(i + 1, 1).setValue(log[i]);
+    }
+    
+    // Formatear
+    hojaLog.getRange(1, 1, log.length, 1).setWrap(true);
+    hojaLog.setColumnWidth(1, 700);
+    hojaLog.getRange('A:A').setFontSize(9);
+    
+    activo.toast(`✅ Log guardado en hoja: 📋 LOG_COPIA_HOJAS`, 'INFO', 5);
+    
+  } catch (error) {
+    console.error('Error al crear hoja de log:', error);
+  }
+}
+
+/**
+ * Función para verificar qué hojas se van a copiar
+ */
+function verificarHojasPrevia() {
+  const log = [];
+  const activo = SpreadsheetApp.getActiveSpreadsheet();
+  const destino = SpreadsheetApp.openById(DESTINO_ID);
+  
+  log.push(`=== VERIFICACIÓN PREVIA ===`);
+  log.push(`📁 Archivo ACTIVO: ${activo.getName()}`);
+  log.push(`📁 Archivo DESTINO: ${destino.getName()}`);
+  log.push(`\n📋 TODAS LAS HOJAS EN ACTIVO:`);
+  
+  const todasLasHojas = activo.getSheets();
+  todasLasHojas.forEach(hoja => {
+    log.push(`   - ${hoja.getName()}`);
+  });
+  
+  log.push(`\n🔍 PATRONES A BUSCAR:`);
+  CONFIG.patrones.forEach(patron => {
+    log.push(`   - ${patron}`);
+  });
+  
+  const hojasEncontradas = filtrarHojasPorPatron(todasLasHojas, log);
+  
+  log.push(`\n✅ HOJAS QUE SERÁN COPIADAS (${hojasEncontradas.length}):`);
+  hojasEncontradas.forEach(hoja => {
+    const base = obtenerNombreBase(hoja.getName());
+    log.push(`   - ${hoja.getName()} → Base: ${base}`);
+  });
+  
+  // Verificar qué existe en destino
+  const hojasDestino = destino.getSheets();
+  log.push(`\n📋 HOJAS ACTUALES EN DESTINO:`);
+  hojasDestino.forEach(hoja => {
+    log.push(`   - ${hoja.getName()}`);
+  });
+  
+  log.push(`\n💡 Las hojas existentes con misma BASE serán ELIMINADAS antes de copiar`);
+  
+  mostrarLogCompleto(log, activo);
+  activo.toast(`Verificación completa. Revisa la hoja 📋 LOG_COPIA_HOJAS`, 'VERIFICACIÓN', 5);
+}
