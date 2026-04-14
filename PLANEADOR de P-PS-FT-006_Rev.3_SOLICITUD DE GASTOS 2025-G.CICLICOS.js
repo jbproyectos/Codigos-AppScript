@@ -13,14 +13,14 @@ function ciclicosBoton() {
       { link: "10ShS-qAuQvmfthOaN326EgbXQfKMB4mI9znPnwFGVag", destino: "S.Gastos Personales", origen: "Base de Datos Personal" }//agregar el 003 gastos personales.*/
       
       //originales
-      { link: "1havjYfhnJ-Qe5DyDg0duLPAX7BN7veffhysscsG9jPc", destino: "S.Gastos CICLICOS INTERNO PS A6", origen: "Base de Datos Despacho" },
-      { link: "1ngHul195CohXo7eFB6lvDOhgNxAP9pwOgKnt27th8UI", destino: "S.Gastos CICLICOS INTERNO PS A5", origen: "Base de Datos Despacho" },
-      { link: "1lOQ7p4H4pfqpADV5pDQBFKLv-_Jaf9aS6OBjwi0zGos", destino: "S.Gastos CICLICOS INTERNO PS A4", origen: "Base de Datos Despacho" },
-      { link: "1PaQdKfVk51UiMNnKVS-Jo0YiDSs3mU-76_zweQy1M6c", destino: "S.Gastos CICLICOS INTERNO PS A3", origen: "Base de Datos Despacho" },
-      { link: "1CalZsgEqEhWPJGloUGBSZwUXz9uPaVK2VfwbvRQuTms", destino: "S.Gastos CICLICOS INTERNO PS A2", origen: "Base de Datos Despacho" },//modif 18/12/2025 nominas
-      { link: "1HueYpVVHTSL6bJpBF8y_PEF-C5MGIt_o2wgPeYRJd7I", destino: "S.Gastos CICLICOS INTERNO PS A1", origen: "Base de Datos Despacho" },//modif 18/12/2025 que no sean nominas
-      { link: "18S6lqUMLJ07QB4QEWvh6Gppb7PSjEWnXPbhY57sbZhM", destino: "S.Gastos CICLICOS INTERNO PS A0", origen: "Base de Datos Despacho" },
-      { link: "19fionVnXuVOe2Ex5WthuF5te0YrZbPz-HN8YvV9XwuA", destino: "S.Gastos Personales", origen: "Base de Datos Personal"}//agregar el 003 gastos personales.
+      { link: "1GzUr1VwLZVYjwvNZ7yl_tvvAezDWABgmca18Hkz5B4k", destino: "S.Gastos CICLICOS INTERNO PS A6", origen: "Base de Datos Despacho" },
+      { link: "1109q92QdThhvIeHDKXHxyBlz4Y0cLcj2UYIRrL7Veoc", destino: "S.Gastos CICLICOS INTERNO PS A5", origen: "Base de Datos Despacho" },
+      { link: "11fwocVoPzNY6IuKPMtjXZRLOkdGQP5eDTStTq0NnEls", destino: "S.Gastos CICLICOS INTERNO PS A4", origen: "Base de Datos Despacho" },
+      { link: "1dNBBBTgpPPXMQ4Jc7E_sdTrwhuHPk0JQH83k6sst5Kw", destino: "S.Gastos CICLICOS INTERNO PS A3", origen: "Base de Datos Despacho" },
+      { link: "1BHvVd83I0Kx-lvOwbIBu5HsAJKCf-AEZTXWPyvHr4_0", destino: "S.Gastos CICLICOS INTERNO PS A2", origen: "Base de Datos Despacho" },//
+      { link: "1LAoQDyHq5O0LSRmcVb2knm54mA3xnZHcoMY1TW6MikM", destino: "S.Gastos CICLICOS INTERNO PS A1", origen: "Base de Datos Despacho" },//Damaris??
+      { link: "1s9bacMC_D5STQ2BHhSry9aVcIpQtoLCgh8G5MA9at4Y", destino: "S.Gastos CICLICOS INTERNO PS A0", origen: "Base de Datos Despacho" },
+      { link: "1Ic3r0-q88eRPL9PraWt8JjCRiu5Umn1ViKbqoq8SBkg", destino: "S.Gastos Personales", origen: "Base de Datos Personal"}//agregar el 003 gastos personales.
     ];
 
     hojasDatos.forEach(function (hoja) {
@@ -37,82 +37,79 @@ function ciclicosBoton() {
 }
 
 function envioInfoCiclico_rapidoV3(hojaInfo) {
-
   var libroOrigen = SpreadsheetApp.getActiveSpreadsheet();
   var hojaOrigen = libroOrigen.getSheetByName(hojaInfo.origen);
 
   var ultimaFila = hojaOrigen.getLastRow();
-  if (ultimaFila < 2) return; // No hay datos
+  if (ultimaFila < 2) return;
 
-  // Solo lee lo que existe
-  //var datos = hojaOrigen.getRange(2, 2, ultimaFila - 1, 28).getValues();
-  //fila 2, columna 1 = A, fila final, columna final
   var datos = hojaOrigen.getRange(2, 1, ultimaFila - 1, 29).getValues();
-
-  // Abrir UNA VEZ archivo de destino
   var libroDestino = SpreadsheetApp.openById(hojaInfo.link);
   var hojaDestino = libroDestino.getSheetByName(hojaInfo.destino);
 
   var fechaHoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yy');
-
   var generarF;
 
-  // Filtro inteligente en una sola pasada
-  var filas = datos.filter(function (fila) {
+  // Definimos reglas por destino
+  var reglas = {
+    "S.Gastos CICLICOS INTERNO PS A0": fila =>
+      fila[2] === "CLARA NATALIE REYNA ROCHA" && 
+      fila[4] === "DESPACHO" &&
+      fila[0].split('-')[2].trim() === "0403",
 
-    // Fecha
-    //var fecha = fila[0];
+    "S.Gastos CICLICOS INTERNO PS A1": fila =>
+      fila[2] === "DAMARIS TORRES OLIVARES" && 
+      fila[4] === "DESPACHO" && 
+      fila[7] !== "NOMINAS" &&
+      fila[0].split('-')[2].trim() === "0404",
+
+    "S.Gastos CICLICOS INTERNO PS A2": fila =>
+      fila[2] === "NANCY NAYELI LUNA AREVALO" && 
+      fila[4] === "DESPACHO" && 
+      fila[7] === "NOMINAS" &&
+      fila[0].split('-')[2].trim() === "0405",
+
+    "S.Gastos CICLICOS INTERNO PS A3": fila =>
+      fila[2] === "FATIMA LUCIA MARTINEZ RODRIGUEZ" && 
+      fila[4] === "DESPACHO" &&
+      fila[0].split('-')[2].trim() === "0406",
+
+    "S.Gastos CICLICOS INTERNO PS A4": fila =>
+      fila[2] === "NADIA ISELA ELIZONDO TREVIÑO" && 
+      fila[4] === "DESPACHO" &&
+      fila[0].split('-')[2].trim() === "0407",
+
+    "S.Gastos CICLICOS INTERNO PS A5": fila =>
+      fila[2] === "NANCY NAYELI LUNA AREVALO" && 
+      fila[4] === "DESPACHO" &&
+      fila[0].split('-')[2].trim() === "0408",
+
+    "S.Gastos CICLICOS INTERNO PS A6": fila =>
+      fila[2] === "NANCY NAYELI LUNA AREVALO" && 
+      fila[4] === "DESPACHO" &&
+      fila[0].split('-')[2].trim() === "0409",
+
+    "S.Gastos Personales": fila =>
+      fila[2] === "DAMARIS TORRES OLIVARES" && 
+      fila[4] === "PERSONAL" &&
+      fila[0].split('-')[2].trim() === "0410"
+  };
+
+  var filas = datos.filter(function (fila) {
     var fecha = fila[1];
     if (!(fecha instanceof Date)) return false;
-    //if (Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd/MM/yy') !== fechaHoy)
-    if (Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd/MM/yy') !== fechaHoy)
-      return false;
+    if (Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd/MM/yy') !== fechaHoy) return false;
 
-    fecha === Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'dd-MM-yyyy HH:mm:ss');
-
-       //actualizacion de fecha 11/02/2026
     var ahora = new Date();
-    // Formateamos solo la hora (HH:mm:ss)
     var hora = Utilities.formatDate(ahora, Session.getScriptTimeZone(), "HH:mm:ss");
     var fecha2 = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yy');
-    Logger.log("fecha " +fecha2 + " " + hora);
+    generarF = fecha2 + " " + hora;
 
-    generarF = fecha2 + " "+ hora;
+    var status = fila[28];
+    if (status !== "NUEVO") return false;
 
-    var persona = fila[2];
-    var area = fila[4]; //uso
-    var categoria = fila[7];
-
-    switch (hojaInfo.destino) {
-      case "S.Gastos CICLICOS INTERNO PS A0":
-        return persona === "NATALIE_REYNA" && area === "DESPACHO";
-
-      /*las demas categorias deben de caer aqui*/
-      case "S.Gastos CICLICOS INTERNO PS A1":
-        return persona === "VALERIA_VARGAS" && area === "DESPACHO" && categoria !== "NOMINAS";//que no sean nomina, que sean las demas categorias.
-
-      /*solo nominas cairan en el A2 */
-      case "S.Gastos CICLICOS INTERNO PS A2":
-        return persona === "VALERIA_VARGAS" && area === "DESPACHO" && categoria === "NOMINAS"; //solo nominas
-
-      case "S.Gastos CICLICOS INTERNO PS A3":
-        return persona === "FATIMA_MARTINEZ" && area === "DESPACHO";
-
-      case "S.Gastos CICLICOS INTERNO PS A4":
-        return persona === "NADIA_ELIZONDO" && area === "DESPACHO";
-
-      case "S.Gastos CICLICOS INTERNO PS A5":
-        return persona === "NAYELI_LUNA" && area === "DESPACHO";
-
-      case "S.Gastos CICLICOS INTERNO PS A6":
-        return persona === "FRIDA_PIÑA" && area === "DESPACHO";
-      
-      case "S.Gastos Personales":
-        return persona === "VALERIA_VARGAS" && area === "PERSONAL";
-
-      default:
-        return true; // fallback
-    }
+    // Aplica la regla correspondiente al destino
+    return reglas[hojaInfo.destino] ? reglas[hojaInfo.destino](fila) : true;
   });
 
   if (filas.length === 0) {
@@ -120,14 +117,9 @@ function envioInfoCiclico_rapidoV3(hojaInfo) {
     return;
   }
 
-  //var inicioPegado = hojaDestino.getLastRow() + 1;
   var inicioPegado = ultimaFilaNoVaciaV1(hojaDestino);
-
-  //hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 28)
-  hojaDestino.getRange(inicioPegado + 1, 1, filas.length, 29)
-    .setValues(filas);
-
-  hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 1).setValue(generarF);//poner la fecha y la hora juntas.
+  hojaDestino.getRange(inicioPegado + 1, 1, filas.length, 29).setValues(filas);
+  hojaDestino.getRange(inicioPegado + 1, 2, filas.length, 1).setValue(generarF);
 
   Logger.log(`✅ ${hojaInfo.destino}: Pegadas ${filas.length} filas.`);
 }
@@ -139,7 +131,6 @@ function ultimaFilaNoVaciaV1(hoja) {
     return;
   }
   
-  //const columna = hoja.getRange("A:A").getValues(); // Obtiene todos los valores de la columna B
   const columna = hoja.getRange("D:D").getValues(); // Obtiene todos los valores de la columna B
   let ultimaFila = 0;
 
@@ -154,6 +145,7 @@ function ultimaFilaNoVaciaV1(hoja) {
   return ultimaFila;
  // Logger.log(`La última fila con datos en la columna A de 'solicitudes' es: ${ultimaFila}`);
 }
+
 
 
 /*ANUAL 22/12/2025*/
