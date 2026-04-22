@@ -6,21 +6,6 @@ const SSID_A2 = `18OWh6mXY0-o5MRCAZEMQrznQmMJURt9n5bnolfF8ERU`; // Archivo A2 PR
 const ID_DIRECTORIO = `1NZBsJOLjnP6aojinaPUaLMnliDHYnNqVJKMYq8VhTJE`; // V0.2
 const ID_MASTER_GASTOS = `178M33EaTbv6rT6CA2XkA_csJlMoBI9Ej3s1T_7hq0no`;
 
-function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  var menu = ui.createMenu("NOMINA");
-  menu.addSeparator();
-  // menu.addItem("Generar Nomina Anual","generarNominaAnual");
-  // menu.addItem("➕ Agregar Colaborador","agregarColaborador");
-  // menu.addItem("➖ Quitar Colaborador","quitarColaborador");
-  menu.addSeparator();
-  menu.addItem("⏳ Horas Extra","horasExtra");
-  menu.addSeparator();
-  // menu.addItem("Comisiones","comisiones");
-  menu.addSeparator();
-  menu.addToUi();
-}
-
 function tablaNomina() {
   const regla = SpreadsheetApp.newDataValidation()
     .requireCheckbox("TRUE", "FALSE")
@@ -29,7 +14,7 @@ function tablaNomina() {
   const PLANTILLA = ss.getSheetByName(PLANTILLA_NAME);
   const SHEET = ss.getSheetByName(TABLAS_SHEET);
 
-  var totalRange = (SHEET.getRange(1001,11,900,6).getValues().slice(1)).filter(fila =>
+  var totalRange = (SHEET.getRange(1001,11,1000,6).getValues().slice(1)).filter(fila =>
     fila[0] != "" && 
     fila[0] != null && 
     fila[0] != `USUARIO FINAL`);
@@ -41,8 +26,11 @@ function tablaNomina() {
   totalRange = totalRange.map(fila => [fila[0], fila[5], fila[2]]);
 
   var afiInfo = totalRange.filter(fila => 
-    (fila[1] == `IMPUESTO SOBRE LA NOMINA` || 
-    fila[1] == `AGUINALDOS`) &&
+    (fila[1] == `IMPUESTO SOBRE LA NOMINA` 
+    || fila[1] == `AGUINALDOS`
+    || fila[1] == `CREDITO INFONAVIT`
+    || fila[1] == `CREDITO PERSONAL`
+    ) &&
     fila[2] != 0);
 
   var bonoInfo = totalRange.filter(fila => 
@@ -59,9 +47,6 @@ function tablaNomina() {
     fila[1] == `BONO MENSUAL` &&
     fila[2] != 0);
 
-  var infoInfo = totalRange.filter(fila => 
-    fila[1] == `CREDITO INFONAVIT`).map(fila =>
-    [fila[2]]);
 
   // Validacion para Bonos segun semana
   var diasBono = 22; // 22 Cuarto Viernes para Bonos Bienestar 🟢
@@ -78,6 +63,7 @@ function tablaNomina() {
 
   //  afiInfo contiene todos los datos que se muestran en la segunda tabla.
   //  V2 no se muestran datos de Aguinaldos ni Impuesto sobre la Nomina
+  //  V3 SI se muestran datos de Aguinaldos e Impuesto sobre la Nomina, asi como los Creditos correspondientes
   //  Incluir tabla aparte de Horas Extras
 
   const plantEncabezados2 = PLANTILLA.getRange(1,1,7,16);
@@ -92,22 +78,19 @@ function tablaNomina() {
   SHEET.getRange(`A7`).setFormula(PLANTILLA.getRange("A2").getFormula());
   SHEET.getRange(`G7`).setFormula(PLANTILLA.getRange("G2").getFormula());  
   SHEET.getRange(13,5,nomInfo.length,1).setFormulas(PLANTILLA.getRange(8,5,nomInfo.length,1).getFormulas());
-  // SHEET.getRange(13,4,nomInfo.length,1).setValues(PLANTILLA.getRange(8,4,nomInfo.length,1).getValues());
-  (infoInfo.length>0)?SHEET.getRange(13,4,infoInfo.length,1).setValues(infoInfo):0;
   SHEET.getRange(13,1,nomInfo.length,3).setValues(nomInfo);
 
   if(afiInfo.length>0){
     const plantAllFormatRange = PLANTILLA.getRange(8,7,afiInfo.length,5);
     plantAllFormatRange.copyFormatToRange(SHEET, 7, 11, 13, afiInfo.length+12);
     SHEET.getRange(13,11,afiInfo.length,1).setFormulas(PLANTILLA.getRange(8,11,afiInfo.length,1).getFormulas());
-    // SHEET.getRange(13+afiInfo.filter(fila => fila[1] == `AGUINALDOS` || fila[1] == `IMPUESTO SOBRE LA NOMINA`).length,10,afiInfo.length,1).setDataValidation(regla);
     try {
       const offset = afiInfo.filter(
-        fila => fila[1] === 'AGUINALDOS' || fila[1] === 'IMPUESTO SOBRE LA NOMINA'
+        fila => fila[1] === 'AGUINALDOS' || fila[1] === 'IMPUESTO SOBRE LA NOMINA' || fila[1] === 'CREDITO INFONAVIT' || fila[1] === 'CREDITO PERSONAL'
       ).length;
       const startRow = 13 + offset;
       const numRows = afiInfo.filter(
-        fila => fila[1] != 'AGUINALDOS' && fila[1] != 'IMPUESTO SOBRE LA NOMINA'
+        fila => fila[1] != 'AGUINALDOS' && fila[1] != 'IMPUESTO SOBRE LA NOMINA' && fila[1] != 'CREDITO INFONAVIT' && fila[1] != 'CREDITO PERSONAL'
       ).length;
       if (numRows > 0) {
         SHEET
@@ -404,16 +387,6 @@ function removeColab(colaborador){
       console.log(`Fila ${i + 1} eliminada (Nombre: ${nombreColab})`);
     }
   }
-
-  // const colaboradoresNombres = colaboradoresHoja.getRange("G:G").getValues().flat();
-  // for (let i = colaboradoresNombres.length - 1; i >= 0; i--) {
-  //   if (colaboradoresNombres[i] === nombreColab) {
-  //     colaboradoresHoja.deleteRow(i + 1);
-  //     colaboradoresHoja.insertRowAfter(colaboradoresHoja.getRange(i,11).getDataRegion().getLastRow());
-  //     console.log(`Fila ${i + 1} eliminada (Nombre: ${nombreColab})`);
-  //   }
-  // }
-  // pollo(nombreColab);
 }
 
 //////////////////////////////
@@ -623,13 +596,6 @@ function mandarSolicitud() {
   // return;
   const a2Sheet = SpreadsheetApp.openById(SSID_A2).getSheetByName(`S.Gastos CICLICOS INTERNO PS A2`);
   var consecutivo = a2Sheet.getRange(`A6:A`).getValues();
-    // .filter(fila => typeof fila[0] === `string` && fila[0].startsWith(`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}`)).flat()).length+1;
-
-  //   var datosObjStr = JSON.stringify(datosObj);
-  // Logger.log(`
-  // ${datosObjStr}
-  // `);
-  // return false
 
   solicitudSuperior = solicitudSuperior.map(fila => [
     generarIdentificador( // IDENTIFICADOR
@@ -656,7 +622,7 @@ function mandarSolicitud() {
     `SERVICIO`, // CATEGORÍA GASTOS
     `TRANSFERENCIA`, // FORMA DE PAGO
     `NACIONAL`, // DETALLE DE PAGO
-    `N/A`, // COMENTARIOS DE ENTREGA
+    datosObj[fila[0]].EMPRESA, // COMENTARIOS DE ENTREGA
     datosObj[fila[0]].DESTINO || `SIN DATOS`, // DESTINO
     datosObj[fila[0]].CUENTA_CLABE || `SIN DATOS`, // CUENTA_CLABE
     datosObj[fila[0]].TITULAR || `SIN DATOS`, // TITULAR
@@ -665,8 +631,7 @@ function mandarSolicitud() {
     `N/A`,
     `SIN TICKET`,
     `N/A`
-  ])
-  
+  ])  
 
   var sheet13 = SpreadsheetApp.openById(SSID_A2).getSheetByName(`S.Gastos CICLICOS INTERNO PS A2`);
   var lastRow13 = (sheet13.getRange(`C1:C`).getValues().filter(fila => fila[0]!="").flat()).length+3;
@@ -753,15 +718,6 @@ function rebajes(){
 //////////////////////////////
 
 function generarIdentificador(area,categoria,subcatego,nombre,consecutivo){
-// function generarIdentificador(){
-  //  const ID_DIRECTORIO = `1NZBsJOLjnP6aojinaPUaLMnliDHYnNqVJKMYq8VhTJE`; // V0.2
-  //  const ID_MASTER_GASTOS = `178M33EaTbv6rT6CA2XkA_csJlMoBI9Ej3s1T_7hq0no`;
-  //  const SSID_A2 = SpreadsheetApp.getActiveSpreadsheet().getId(); // Archivo A2
-  //  const subcatego = `NOMINA`;
-  //  const nombre = `SARAI BELLO ALBARRAN`;
-  //  const area = `PROYECTOS`;
-  //  const categoria = `NOMINAS`;
-  // try{
    var archivo;
    (categoria == `NOMINAS`)?archivo = `A2`:0; // SWITCH para obtener que archivo es con la categoria
    const directorioSheet = SpreadsheetApp.openById(ID_DIRECTORIO).getSheetByName(`RESTRUCTURACION`);
@@ -779,8 +735,6 @@ function generarIdentificador(area,categoria,subcatego,nombre,consecutivo){
   (subcatego==`BONO GRATIFICACION`)?subcatego=`BONO GRATIFICACION`:0;
   var numSubcatego = masterGObjeto[subcatego];
   var numArea = areasObjeto[area];
-
-  //  Logger.log(`Nombre: ${nombre}`);
 
    consecutivo = consecutivo.filter(fila => typeof fila[0] === `string` && fila[0].startsWith(`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}`)).flat().length+1;
     const folio = seisCerosAntes(consecutivo);
@@ -810,6 +764,7 @@ function personaObject(data) {
       AREA_APLICA: row[6],
       CATEGORIA: row[7],
       DETALLE: row[9],
+      EMPRESA: row[19],
       DESTINO: row[20],
       CUENTA_CLABE: row[21],
       TITULAR: row[22]
@@ -872,33 +827,24 @@ function validarDatos(archivo, numArea, numEmpleado, numSubcatego, folio) {
   return`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}-${folio}`;
 }
 
+//////////////////////////////
 
-function horasXtra(data) {
+function horasXtra() {
   const ss = SpreadsheetApp.openById(SSID);
   const SHEET = ss.getSheetByName(TABLAS_SHEET);
   const PLANTILLA = ss.getSheetByName(PLANTILLA_NAME);
   const lastRow = SHEET.getRange(`M12`).getDataRegion().getLastRow()+1;
-  var arrNom = SHEET.getRange(`K1002:M1100`).getValues().filter(fila => fila[0] != "" && fila[0] != null)
-    .map(fila => [fila[0], fila[2]]);
-  var objNom = arrToObject(arrNom);
-  var puNom = objNom[data.name];    //  Precio Unitario Nominas (Obtener dependiendo del data.name)
-    // data.name
-    // data.horas
-  var formula = 
+  const formula = 
   `=IF(O${lastRow}*1>8,
   IF(O${lastRow}*1>16,(N${lastRow}*8)+(N${lastRow}*16)+(N${lastRow}*(O${lastRow}-16)*3),(N${lastRow}*8)+(N${lastRow}*(O${lastRow}-8)*2)),
 N${lastRow}*O${lastRow})`;
-
-  var arrXtra = [[
-    data.name,
-    (puNom/8),   //  (Precio Unitario Nomina Semanal)/8 (?)
-    data.horas,
-    formula
-  ]];
+  const precioUnitFormula = 
+    `=IFERROR(VLOOKUP($M${lastRow}, $K$1002:$M$1100, 3, FALSE)/8, "")`;
 
   PLANTILLA.getRange(8,13,1,4).copyFormatToRange(SHEET,13,16,lastRow,lastRow);
-  // SHEET.getRange(lastRow,13,1,1).setValues(PLANTILLA.getRange(8,13,1,1).getValues());
-  SHEET.getRange(lastRow,13,1,4).setValues(arrXtra);
+  SHEET.getRange(`M${lastRow}`)
+      .setDataValidation(SHEET.getRange(`K1402`).getDataValidation());
+  SHEET.getRange(lastRow,13,1,4).setValues([[`NOMBRE`,precioUnitFormula,0,formula]]);
 }
 
 //////////////////////////////
