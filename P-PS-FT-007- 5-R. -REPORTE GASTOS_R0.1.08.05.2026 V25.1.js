@@ -6,7 +6,7 @@ function onOpen() {
     + "\n- 🚫 No alterar fórmulas."
     + "\n- 🚫 No modificar la posición de las tablas o el rango."
     + "\n- ✅ Para un uso adecuado del archivo consulta tu instrucción de trabajo P-PS-IT-002_ SOLICITUD DE GASTOS DESPACHO DIRECCIÓN SOLICITANTE"
-    + "\n- ☎︎ Contacta a 'Optimización' para realizar modificaciones. V25";
+    + "\n- ☎︎ Contacta a 'Optimización' para realizar modificaciones. V25.1";
 
   ui.alert(mensaje);
 
@@ -309,21 +309,27 @@ function copiarTemporarG1() { //copia y elimina
 }
 
 ////10/12/2025
-function copiarTemporalAlMasterV1() {//copiado y eliminado
+function copiarTemporalAlMaster() {//copiado y eliminado
   var libroOrigen = SpreadsheetApp.getActiveSpreadsheet(); // G1 = 5R
-  var libroDestino = SpreadsheetApp.openById('1VkGWbBthDKEgceEvuN6dwBgf46h7_XbtC3eQqZ1B2ZA'); // Master idTesteoV1 = 1N12NZmKe0JjWuFVtww2C4Xm52E9XMZyRgx00vQXvRL0
+  var libroDestino = SpreadsheetApp.openById('17uHCWHmdib3l8sATvXss8QvknwUtl1lds6pj9N9bb9g'); // Master 
 
   var hojaOrigen = libroOrigen.getSheetByName("G1");
-  var hojaDestino = libroDestino.getSheetByName("ACUMULADO 2025");
+  var hojaDestino = libroDestino.getSheetByName("ACUMULADO");
 
-   // Obtener la fecha de ayer
   var ayer = new Date();
-  if(ayer.getDay() === 1 || ayer.getDay() === 5){//Viernes o lunes
-    // Restar 1 día (24 horas)
+
+  if (ayer.getDay() === 1) { // Lunes
     ayer.setDate(ayer.getDate() - 3);
-  } else if(ayer.getDay() === 2 || ayer.getDay() === 3 || ayer.getDay() === 4){//Martes, Miercoles, Jueves
+
+  } else if (
+    ayer.getDay() === 2 || // Martes
+    ayer.getDay() === 3 || // Miércoles
+    ayer.getDay() === 4 || // Jueves
+    ayer.getDay() === 5    // Viernes
+  ) {
     ayer.setDate(ayer.getDate() - 1);
   }
+
   var fomateoAyer = Utilities.formatDate(ayer, Session.getScriptTimeZone(), 'dd/MM/yy');
 
   // Obtener la fecha actual formateada
@@ -355,18 +361,17 @@ function copiarTemporalAlMasterV1() {//copiado y eliminado
     }
   }
 
+  // Pegar todas las filas que cumplen las condiciones en la hoja destino
   if (filasParaPegar.length > 0) {
     var ultimaFilaDestino = ultimaFilaNoVaciaV1(hojaDestino);
 
-
-    //var guardar = hoja.getRange("A1:AJ100").getValues(); // AJ = columna 36
-
     for (var i = 0; i < filasParaPegar.length; i++) {
+    
       if (filasParaPegar[i][1] instanceof Date) {
         filasParaPegar[i][1] = Utilities.formatDate(
           filasParaPegar[i][1],
           Session.getScriptTimeZone(),
-          "dd/MM/yyyy"
+          "dd/MM/yyyy HH:mm:ss"
         );
       }
       
@@ -390,15 +395,13 @@ function copiarTemporalAlMasterV1() {//copiado y eliminado
   hojaDestino.getRange(ultimaFilaDestino + 1, 1, filasParaPegar.length, filasParaPegar[0].length)
       .setValues(filasParaPegar);
 
-
     
 
-    Logger.log(filasParaPegar.length + " filas copiadas a la hoja destino.");
+    Logger.log(filasParaPegar.length + " filas copiadas a la hoja destino ACUMULADO Presupuestos.");
   }else {
     Logger.log("No se encontraron filas que cumplan las condiciones para copiar.");
   }
 }
-
 
 function ultimaFilaNoVaciaV1(hoja) {
  // const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("SOLICITUDES 2024");
