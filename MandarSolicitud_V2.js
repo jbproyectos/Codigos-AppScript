@@ -1,333 +1,261 @@
-// const SSID_A2 = ""; // REAL
-const SSID_A2 = SpreadsheetApp.getActiveSpreadsheet().getId(); // PRUEBA
-const ID_NOMINAS = SpreadsheetApp.getActiveSpreadsheet().getId(); // Archivo A2
-const ID_DIRECTORIO = `1NZBsJOLjnP6aojinaPUaLMnliDHYnNqVJKMYq8VhTJE`; // V0.2
-const ID_MASTER_GASTOS = `178M33EaTbv6rT6CA2XkA_csJlMoBI9Ej3s1T_7hq0no`;
+  //  Constantes Globales con MAYUSCULAS
+  //  Variables y funciones con camelCase
+  //  Archivo: CAPTURA AGUINALDO/IMSS 
+const DATOS_SSID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const NOM_SHEET = ["SOLICITUD_NOMINA"]; // Hoja en archivos SOLICITUD_NOMINA
+const NOM_SSID_01 = [  //  Arreglo con IDs de los archivos de Captura Nomina
+  `16UpUYJEK7lUg_shhoe_ViTCLYElDlGaDSda6Yd5ES_E`,// ASISTENCIA_EJECUTIVA
+  `1wIrDKJAAVHIoeCoffZ7rcrUy0cCjaBbbJSQBZTFQh4E`,// BANCOS
+  `1FSOsSstW1EzEBKWWh3TbVIqmeoesiKaW3jcrS6Nh1Po`,// CONTABILIDAD
+  `1_Kfbscpj3x9RbMxM85PDbQecH9U4EkaPUkcKXktsO8Y`,// DOMICILIOS
+  `12Hdwv_Xqst8TVE3ZIog-4a5C1H1026CBWasB74jdURk`,// FACTURACIÓN
+  `15BVa3ZqDwX3xefU9cEgBBeDZlrDvMcLjg0QDanfmaiQ`,// JURÍDICO
+  `1nebC_hYSG-SPX5Re4mLvytolOkbXNZFCZWMGVgi6F6w`,// LOGÍSTICA
+];
+const NOM_SSID_02 = [  //  Arreglo con IDs de los archivos de Captura Nomina
+  `1V2-NUr54kjQawmyjhwWV0_4neh6DggtHJsXTtsGEw_s`,// OPERACIÓN
+  `1SA8r_Ul-IJh6aAarQAWJtC1zFXPQKT7oot32pXLJrNs`,// PRESUPUESTOS
+  `170jSCHbe6LRG_oJQe0H_Cx8DM_94xNZWFkiskCOWjZE`,// PROYECTOS
+  `1NZb9dOdmkf9EWkM7k4EG3exoC6FUK2fWKmlb7pgiRQk`,// RECURSOS_HUMANOS
+  `1oM2Hb42_73sCXWSE4m1tbYrqEa6Oq0ewkQefkwZwSWs`,// TESORERÍA
+  `1e7c43FrPAIEh_ijgfYLtkGRdZqvo5l9XGkOyRUQrJ6I`,// VERIFICACIÓN
+];
 
-function mandarSolicitudBoton(){
-  if(mandarSolicitud()){
-    rebajes();
-    delTable();
-    return
-  }
+// const NOM_SSID = [  //  Arreglo con IDs de los archivos de Captura Nomina
+//   `1zc6xunIz8J3B52QVu5sXWYkkxV6VhCq_SKJO_vBgpwM`, // PROYECTOS
+//   `1ceN-yAsV3R7XujZ6yHBHt_AIHpOGd6C2G2MeNeWBqmE`, // AGENDA_EJECUTIVA
+//   `1peUhkz4vu2MYSKHLQUEHDWt5SnkBbKnYoS7rqvLHh8g`, // TESORERIA
+//   `1puzijIGnQyu5jFegnljOBB5Vlxuw8cm4zRZRi9FdTNo`, // VERIFICACION
+//   `1TWO5okVpZ2b1_qnmPnbx1orlUZ54fncx-5PigqwT6Wc`, // PRESUPUESTOS
+//   `1cYsMyp_5cumH-Uw1Yu0WD8iUrDENMvjvqnXnEEmKog8`, // RRHH
+//   `1mcPLIjPpgVqqx3V81Z9jQyPqm_3Tlv1DRIU8Vu2YeZA`, // JURIDICO
+//   `1PTJ3YqL8zyHR2G1SBEuUmUrDmJiHII-Pamshgv5rsWU`, // CONTABILIDAD
+//   `1U_kaB5pqWy1GHEEfJLmSBxcaTUzix1k79YumjE-0trM`, // DOMICILIOS
+//   `1btNYC0d-fE24_BecXBYZeNHFfQHQ86ZrqGfMBSAiEng`, // LOGISTICA
+//   `1Abimu3FGoFeJY4pHAxRsBWe974266DEKM8B5cVfskME`, // BANCOS
+//   `1e4fiO-H-tJL68up_FLPOCVU0PD_L7w0MJyQPog9VLLk`, // FACTURACION
+//   `14ihddZEAUzAx8srGEE8ap65RlT_sBhf0BTrZpfUZFzk`, // OPERACION
+//   // `1V2fSfM3j6sAYq3qan81HhujjivEF5MVpvgT4QnNDT6s`, // COBRANZA
+// ];
   
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu(`⭕ REBAJES/IMSS`)
+    // .addItem(`► Mandar Información a Nóminas`, `mandarInfoNominas`)
+    .addItem(`► Borrar Información`, `eraseData`)
+    .addToUi();
 }
 
-function mandarSolicitud() {
-  var nominaHoja = SpreadsheetApp.openById(SSID).getSheetByName(TABLAS_SHEET);
-  var nominaSupCompleta = nominaHoja.getRange(12,1,200,16).getValues();
-  var hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(`Formato Nomina Ejemplo`);
-  if (hoja.getRange(`A13`).getValue() == `` || hoja.getRange(`A13`).getValue() == null){
-    SpreadsheetApp.getActiveSpreadsheet().toast(`🔴NO HAY DATOS POR MANDAR.🔴`);
-    return false
-  }
-  if ((hoja.getRange(`G13:G300`).getValues().filter(fila => fila[0] === `NOMBRE`)).flat().length === 1 ){
-    SpreadsheetApp.getActiveSpreadsheet().toast(`🟡SELECCIONA UN EMPLEADO DEL MES.🟡`);
-    return false
-  }
-  var fechaDinamica = new Date();
+function mandarInfoNominas01(){
+    //  Intentar abrir para insertar datos en lista de archivos
+  NOM_SSID_01.forEach(archNomID => {
+    try{
+    var ssNom = SpreadsheetApp.openById(archNomID);
+    var sheetDatos = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(`CAPTURA`);
+    NOM_SHEET.forEach(nombreSheet => {
+      try{
+      var sheetNom = ssNom.getSheetByName(nombreSheet);
 
-  (hoja.getRange(`R5`).getValue())?fechaDinamica = hoja.getRange(`R2`).getValue():0;
+      var datosCompletos = sheetDatos.getRange("A6:J").getDisplayValues(); // Nombres empiezan en A3 (FILAS PENDIENTES)
+      var nombresNom = sheetNom.getRange("K1002:K1100").getValues().
+      filter(fila => fila[0] != "" && fila[0] != null);
+      datos = datosCompletos.filter(fila =>
+        fila[0] != "" && fila[0] != null).map(fila => 
+          [fila[0], fila[6], fila[7], fila[8], fila[9]]);
 
-  var nominaSemanal = (nominaSupCompleta).filter(fila => 
-    fila[0] !== "" && fila[0] !== null && fila[3] !== `HORAS EXTRAS`)
-    .map(fila => 
-      [fila[0], fila[1], fila[2], `NOMINA`, fila[4]] 
-    ).slice(1).filter(fila => 
-    fila[0] !== "" && fila[0] !== null && fila[3] !== `HORAS EXTRAS`);
-  
-  var horasExtra = (nominaSupCompleta).slice(1).filter(fila =>   //  Cambiar el intervalo a la tercer tabla
-    fila[12] !== "" && fila[12] !== null && fila[12] !== `AL DARLE CLICK A "MANDAR SOLICITUD" ESTA CONFIRMANDO QUE LOS DATOS SON CORRECTOS.`)
-    .map(fila => 
-      [fila[12], fila[13], fila[14], `HORAS EXTRAS`, fila[15]] 
-    );
+      var mapaDatos = {};
+      datos.forEach(fila => {
+        mapaDatos[fila[0]] = fila;
+      });
 
-  var nominaBonos = (nominaSupCompleta)
-    .map(fila => 
-      [fila[6],fila[8],1,fila[7], fila[10]]
-    ).slice(1).filter(fila => 
-    fila[0] !== "" && fila[0] !== null && fila[4] !== 0);
+      var datosOrdenados = nombresNom.map(n => mapaDatos[n[0]] || [n[0], ""]);
+      Logger.log(`Datos: ${datosOrdenados}`);
+      var imss = datosOrdenados.map(fila => [fila[1]]);
+      var aguinaldo = datosOrdenados.map(fila => [fila[2]]);
+      var infonavit = datosOrdenados.map(fila => [fila[3]]);
+      var personal = datosOrdenados.map(fila => [fila[4]]);
+      personal = personal.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      infonavit = infonavit.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      aguinaldo = aguinaldo.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      imss = imss.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
 
-  var solicitudSuperior = [...nominaSemanal, ...horasExtra, ...nominaBonos];
-
-  var datos = nominaHoja.getRange(1002,1,95,29).getValues()
-    .filter(fila => fila[10] != `` && fila[10] != null);
-  var datosObj = personaObject(datos);
-  var today = Utilities.formatDate(fechaDinamica,Session.getScriptTimeZone(), `dd/MM/yyyy`);
-
-  // Logger.log(JSON.stringify(datosObj));
-  // return;
-  const a2Sheet = SpreadsheetApp.openById(ID_NOMINAS).getSheetByName(`S.Gastos CICLICOS INTERNO PS A2`);
-  var consecutivo = a2Sheet.getRange(`A6:A`).getValues();
-    // .filter(fila => typeof fila[0] === `string` && fila[0].startsWith(`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}`)).flat()).length+1;
-
-  //   var datosObjStr = JSON.stringify(datosObj);
-  // Logger.log(`
-  // ${datosObjStr}
-  // `);
-  // return false
-
-  solicitudSuperior = solicitudSuperior.map(fila => [
-    generarIdentificador( // IDENTIFICADOR
-      datosObj[fila[0]].AREA_APLICA,
-      datosObj[fila[0]].CATEGORIA,
-      fila[3],
-      fila[0],
-      consecutivo) || `SIN DATOS`,
-    today, // FECHA CAPTURA
-    datosObj[fila[0]].QUIEN_SOL || `SIN DATOS`, // QUIEN SOLICITA
-    datosObj[fila[0]].DPTO_SOL || `SIN DATOS`, // DPTO SOLICITANTE
-    datosObj[fila[0]].USO || `SIN DATOS`, // USO
-    ((fila[3]==`NOMINA`)?`SEMANAL`:(fila[3]==`HORAS EXTRAS`)?`ÚNICO`:`MENSUAL`) || `SIN DATOS`, // PERIODICIDAD
-    datosObj[fila[0]].AREA_APLICA || `SIN DATOS`, // ÁREA DONDE APLICA
-    datosObj[fila[0]].CATEGORIA || `SIN DATOS`, // CATEGORIA
-    fila[3] || `SIN DATOS`, // SUBCATEGORIA
-    datosObj[fila[0]].DETALLE || `SIN DATOS`, // DETALLE
-    fila[0] || `SIN DATOS`, // USUARIO FINAL
-    fila[2] || `SIN DATOS`, // CANTIDAD
-    (-1*fila[1]) || `SIN DATOS`, // PRECIO UNITARIO
-    `N/A`, // MARCA
-    `N/A`, // PROVEEDOR
-    (fila[3]!=`NOMINA`&&fila[3]!=`HORAS EXTRAS`)?mesNomina(fila[3],today):semanaDelMesNominaSemanal(fila[3],today) || `SIN DATOS`, // DESCRIPCION
-    `SERVICIO`, // CATEGORÍA GASTOS
-    `TRANSFERENCIA`, // FORMA DE PAGO
-    `NACIONAL`, // DETALLE DE PAGO
-    `N/A`, // COMENTARIOS DE ENTREGA
-    datosObj[fila[0]].DESTINO || `SIN DATOS`, // DESTINO
-    datosObj[fila[0]].CUENTA_CLABE || `SIN DATOS`, // CUENTA_CLABE
-    datosObj[fila[0]].TITULAR || `SIN DATOS`, // TITULAR
-    (-1*fila[4]) || `SIN DATOS`, // MONTO / IMPORTE
-    `AZAEL_RANGEL`,
-    `N/A`,
-    `SIN TICKET`,
-    `N/A`
-  ])
-  
-
-  var sheet13 = SpreadsheetApp.openById(SSID_A2).getSheetByName(`S.Gastos CICLICOS INTERNO PS A2`);
-  var lastRow13 = (sheet13.getRange(`C1:C`).getValues().filter(fila => fila[0]!="").flat()).length+3;
-
-  // Logger.log(`Arreglo concat:
-  // ${solicitudSuperior}`);
-
-    //  Insertar datos en A2
-  sheet13.getRange(lastRow13,1,solicitudSuperior.length,solicitudSuperior[0].length).setValues(solicitudSuperior);
-  // return false
-  return true
-}
-
-
-function semanaDelMesNominaSemanal(subcatego,fechaStr) {
-  const [dia, mes, anio] = fechaStr.split('/').map(n => parseInt(n, 10));
-  const fecha = new Date(anio, mes - 1, dia);
-  const PRIMER_DIA_SEMANA = 5;
-  function obtenerViernesSemana(fecha) {
-    const d = new Date(fecha);
-    const day = d.getDay();
-    const diff = (PRIMER_DIA_SEMANA - day + 7) % 7;
-    d.setDate(d.getDate() + diff);
-    return d;
-  }
-  const viernesSemana = obtenerViernesSemana(fecha);
-  const mesViernes = viernesSemana.getMonth();
-  const anioViernes = viernesSemana.getFullYear();
-  const inicioMes = new Date(anioViernes, mesViernes, 1);
-  const offset = (inicioMes.getDay() - PRIMER_DIA_SEMANA + 7) % 7;
-  const numeroDia = viernesSemana.getDate();
-  const semana = Math.floor((numeroDia + offset - 1) / 7);
-  var numSemana = ``;
-  switch (semana){
-    case 1: numSemana = `1RA`; break;
-    case 2: numSemana = `2DA`; break;
-    case 3: numSemana = `3RA`; break;
-    case 4: numSemana = `4TA`; break;
-    default: numSemana = `5TA`; break;
-  }
-  const meses = [
-    "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
-    "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
-  ];
-
-  var mesNombre = meses[mesViernes] || ``;
-  return (`${subcatego} ${numSemana} SEMANA ${mesNombre} ${anioViernes}`);
-}
-
-function mesNomina(subcatego,fechaStr) {
-  const [dia, mes, anio] = fechaStr.split('/').map(n => parseInt(n, 10));
-  const fecha = new Date(anio, mes - 1, dia);
-  const PRIMER_DIA_SEMANA = 5;
-  function obtenerViernesSemana(fecha) {
-    const d = new Date(fecha);
-    const day = d.getDay();
-    const diff = (PRIMER_DIA_SEMANA - day + 7) % 7;
-    d.setDate(d.getDate() + diff);
-    return d;
-  }
-  const viernesSemana = obtenerViernesSemana(fecha);
-  const mesViernes = viernesSemana.getMonth();
-  const anioViernes = viernesSemana.getFullYear();
-  const meses = [
-    "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
-    "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
-  ];
-
-  var mesNombre = meses[mesViernes] || ``;
-  return (`${subcatego} ${mesNombre} ${anioViernes}`);
-}
-
-//////////////////////////////
-
-function rebajes(){
-  const nominaHoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  var rebajesSemana = (nominaHoja.getRange("M3").getValue())*1;
-  var rebajesTotalViejo = nominaHoja.getRange("O3").getValue()*1;
-  var rebajesTotalNuevo = (rebajesTotalViejo+rebajesSemana)*1;
-  // Logger.log(rebajesTotalNuevo);
-  nominaHoja.getRange(`O3`).setValue(rebajesTotalNuevo);
-}
-
-//////////////////////////////
-
-function generarIdentificador(area,categoria,subcatego,nombre,consecutivo){
-// function generarIdentificador(){
-  //  const ID_DIRECTORIO = `1NZBsJOLjnP6aojinaPUaLMnliDHYnNqVJKMYq8VhTJE`; // V0.2
-  //  const ID_MASTER_GASTOS = `178M33EaTbv6rT6CA2XkA_csJlMoBI9Ej3s1T_7hq0no`;
-  //  const ID_NOMINAS = SpreadsheetApp.getActiveSpreadsheet().getId(); // Archivo A2
-  //  const subcatego = `NOMINA`;
-  //  const nombre = `SARAI BELLO ALBARRAN`;
-  //  const area = `PROYECTOS`;
-  //  const categoria = `NOMINAS`;
-  // try{
-   var archivo;
-   (categoria == `NOMINAS`)?archivo = `A2`:0; // SWITCH para obtener que archivo es con la categoria
-   const directorioSheet = SpreadsheetApp.openById(ID_DIRECTORIO).getSheetByName(`RESTRUCTURACION`);
-   const masterGastosSheet = SpreadsheetApp.openById(ID_MASTER_GASTOS).getSheetByName(`DIR-CAT-SUBCAT`);
-   const directorioArreglo = directorioSheet.getRange(`B1:C`).getValues()
-    .filter(fila => fila[1] != `` && fila[1] != null).map(fila => [fila[1], fila[0]]);
-   const masterGArreglo = masterGastosSheet.getRange(`D1:G`).getValues()
-    .filter(fila => fila[1] != `` && fila[1] != null).map(fila => [fila[0], fila[3]]);
-   const areasArreglo = masterGastosSheet.getRange(`P1:Q`).getValues()
-    .filter(fila => fila[1] != `` && fila[1] != null);
-  const directorioObjeto = arrayToObject(directorioArreglo);
-  const masterGObjeto = arrayToObject(masterGArreglo);
-  const areasObjeto = arrayToObject(areasArreglo);
-  var numEmpleado = cerosAntes(directorioObjeto[nombre]);
-  (subcatego==`EMPLEADO DEL MES`)?subcatego=`BONO GRATIFICACION`:0;
-  var numSubcatego = masterGObjeto[subcatego];
-  var numArea = areasObjeto[area];
-
-  //  Logger.log(`Nombre: ${nombre}`);
-
-   consecutivo = consecutivo.filter(fila => typeof fila[0] === `string` && fila[0].startsWith(`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}`)).flat().length+1;
-    const folio = seisCerosAntes(consecutivo);
-
-  //   Logger.log(`
-  //   Folio: ${folio}
-  //   Consecutivo: ${consecutivo}`);
-
-  // Logger.log(`
-  // Nombre: ${nombre}
-  // Folio: ${folio}
-  // `);
-
-  // Logger.log(`
-  // ${numArea}-${archivo}-${numEmpleado}-${numSubcatego}-${folio}
-  // `);
-
-  if(archivo === undefined || 
-  numArea === undefined || 
-  numEmpleado === undefined || 
-  numSubcatego === undefined || 
-  folio === undefined){
-    return`Identificador Invalido`;
-  }
-  return`${numArea}-${archivo}-${numEmpleado}-${numSubcatego}-${folio}`;
-  // } catch (err) {
-      Logger.log('Error al Generar Identificador: ' + err.message);
-      Logger.log(`
-      Area: ${area}
-      Categoria: ${categoria}
-      Subcategoria: ${subcatego}
-      Nombre: ${nombre}
-      Consecutivo: ${consecutivo.length}
-      `);
-      Logger.log(`
-      Numero de Area: ${numArea}
-      Archivo: ${archivo}
-      Numero de Empleado: ${numEmpleado}
-      Subcategoria Abreviada: ${numSubcatego}
-      `);
-      // Folio: ${folio}
-      // Logger.log(`ID: ${numArea}-${archivo}-${numEmpleado}-${numSubcatego}-${folio}`);
-      // Logger.log(`ID: ${numArea}-${archivo}-${numEmpleado}-${numSubcatego}`);
-      // SpreadsheetApp.getActiveSpreadsheet().toast('Error al Generar Identificador: ' + err.message)
-    // }
-}
-
-//////////////////////////////
-
-function arrayToObject(data) {
-  return data.reduce((acc, row) => {
-    const clave = row[0];
-    const valor = row[1];
-    acc[clave] = valor;
-    return acc;
-  }, {});
-}
-
-//////////////////////////////
-
-function personaObject(data) {
-  return data.reduce((acc, row) => {
-    const nombre = row[10];
-    acc[nombre] = {
-      QUIEN_SOL: row[2],
-      DPTO_SOL: row[3],
-      USO: row[4],
-      AREA_APLICA: row[6],
-      CATEGORIA: row[7],
-      DETALLE: row[9],
-      DESTINO: row[20],
-      CUENTA_CLABE: row[21],
-      TITULAR: row[22]
-    };
-    return acc;
-  }, {});
-}
-
-
-//////////////////////////////
-
-function cerosAntes(numero){
-  try{
-    numeroStr = JSON.stringify(numero);
-    switch (numeroStr.length){
-    case 0: numeroStr = `0000`+numeroStr; break;
-    case 1: numeroStr = `000`+numeroStr; break;
-    case 2: numeroStr = `00`+numeroStr; break;
-    case 3: numeroStr = `0`+numeroStr; break;
-    case 4: numeroStr = numeroStr; break;
-    default: numeroStr = `0000`;
+      // SpreadsheetApp.getUi().alert(`IMSS: ${imss}
+      // AGUINALDO: ${aguinaldo}`);
+      sheetNom.getRange(1602,13,imss.length,1).setValues(imss);
+      sheetNom.getRange(1702,13,aguinaldo.length,1).setValues(aguinaldo);
+      sheetNom.getRange(1802,13,infonavit.length,1).setValues(infonavit);
+      sheetNom.getRange(1902,13,personal.length,1).setValues(personal);
+      // Logger.log(JSON.stringify(imss));
+      }catch(error){
+        Logger.log(`No se encontro la hoja ${nombreSheet} en archivo ${ssNom.getName()}`)
+        GmailApp.sendEmail(
+          'gs.proyectos@grupo-cise.com,sb.proyectos@grupo-cise.com,fdpg.presupuestos@grupo-cise.com,cnrr.presupuestos@grupo-cise.com',
+          '⚠️ Error',
+          'Advertencia',
+          {
+            htmlBody: generarCorreoError(
+              'mandarInfoNominas',
+              error,
+              ssNom.getName(),
+              nombreSheet
+            )
+          }
+        );
+      }
+    })
+    } catch (error) {
+      Logger.log(`Error con archivo ${archNomID}: ${error.message}`);
+      // enviarCorreo(archNomID);
     }
-  }catch(err){
-    return undefined;
-  }
-  return numeroStr;
+  });
 }
 
-//////////////////////////////
+function mandarInfoNominas02(){
+    //  Intentar abrir para insertar datos en lista de archivos
+  NOM_SSID_02.forEach(archNomID => {
+    try{
+    var ssNom = SpreadsheetApp.openById(archNomID);
+    var sheetDatos = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(`CAPTURA`);
+    NOM_SHEET.forEach(nombreSheet => {
+      try{
+      var sheetNom = ssNom.getSheetByName(nombreSheet);
 
-function seisCerosAntes(numero){
-    numeroStr = JSON.stringify(numero);
-    switch (numeroStr.length){
-    case 0: numeroStr = `000000`+numeroStr; break;
-    case 1: numeroStr = `00000`+numeroStr; break;
-    case 2: numeroStr = `0000`+numeroStr; break;
-    case 3: numeroStr = `000`+numeroStr; break;
-    case 4: numeroStr = `00`+numeroStr; break;
-    case 5: numeroStr = `0`+numeroStr; break;
-    case 6: numeroStr = numeroStr; break;
-    default: numeroStr = `000000`;
-  }
-  return numeroStr;
+      var datosCompletos = sheetDatos.getRange("A6:J").getDisplayValues(); // Nombres empiezan en A3 (FILAS PENDIENTES)
+      var nombresNom = sheetNom.getRange("K1002:K1100").getValues().
+      filter(fila => fila[0] != "" && fila[0] != null);
+      datos = datosCompletos.filter(fila =>
+        fila[0] != "" && fila[0] != null).map(fila => 
+          [fila[0], fila[6], fila[7], fila[8], fila[9]]);
+
+      var mapaDatos = {};
+      datos.forEach(fila => {
+        mapaDatos[fila[0]] = fila;
+      });
+
+      var datosOrdenados = nombresNom.map(n => mapaDatos[n[0]] || [n[0], ""]);
+      Logger.log(`Datos: ${datosOrdenados}`);
+      var imss = datosOrdenados.map(fila => [fila[1]]);
+      var aguinaldo = datosOrdenados.map(fila => [fila[2]]);
+      var infonavit = datosOrdenados.map(fila => [fila[3]]);
+      var personal = datosOrdenados.map(fila => [fila[4]]);
+      personal = personal.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      infonavit = infonavit.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      aguinaldo = aguinaldo.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+      imss = imss.map(fila => {
+        (fila[0]==""||fila[0]==null)?fila[0]=0:0;
+        return fila;
+      });
+
+      // SpreadsheetApp.getUi().alert(`IMSS: ${imss}
+      // AGUINALDO: ${aguinaldo}`);
+      sheetNom.getRange(1602,13,imss.length,1).setValues(imss);
+      sheetNom.getRange(1702,13,aguinaldo.length,1).setValues(aguinaldo);
+      sheetNom.getRange(1802,13,infonavit.length,1).setValues(infonavit);
+      sheetNom.getRange(1902,13,personal.length,1).setValues(personal);
+      // Logger.log(JSON.stringify(imss));
+      }catch(error){
+        Logger.log(`No se encontro la hoja ${nombreSheet} en archivo ${ssNom.getName()}`)
+        GmailApp.sendEmail(
+          'gs.proyectos@grupo-cise.com,sb.proyectos@grupo-cise.com,fdpg.presupuestos@grupo-cise.com,cnrr.presupuestos@grupo-cise.com',
+          '⚠️ Error',
+          'Advertencia',
+          {
+            htmlBody: generarCorreoError(
+              'mandarInfoNominas',
+              error,
+              ssNom.getName(),
+              nombreSheet
+            )
+          }
+        );
+      }
+    })
+    } catch (error) {
+      Logger.log(`Error con archivo ${archNomID}: ${error.message}`);
+      // enviarCorreo(archNomID);
+    }
+  });
+}
+
+function eraseData() {
+  SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName(`DATOS.`)
+    .getRange(`E6:H`)
+    .clearContent();
+}
+
+
+
+function generarCorreoError(funcion, error, archivo = '', hoja = '') {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:20px">
+    <div style="max-width:700px;margin:auto;background:#fff">
+      <div style="background:#d32f2f;color:#fff;padding:15px">
+        <h2>⚠️ Error en Automatización</h2>
+      </div>
+      <div style="padding:20px">
+        <p>
+          Se detectó un error durante la ejecución de una macro.
+        </p>
+        <table>
+          <tr>
+            <td><b>Función:</b></td>
+            <td>${funcion}</td>
+          </tr>
+          <tr>
+            <td><b>Fecha:</b></td>
+            <td>${new Date()}</td>
+          </tr>
+          <tr>
+            <td><b>Archivo:</b></td>
+            <td>${archivo}</td>
+          </tr>
+          <tr>
+            <td><b>Hoja:</b></td>
+            <td>${hoja}</td>
+          </tr>
+        </table>
+        <h3 style="color:#d32f2f">Mensaje de Error</h3>
+        <div style="
+          background:#fff3f3;
+          padding:15px;
+          border-left:4px solid #d32f2f;
+        ">
+          ${error.message}
+        </div>
+        <h3>Stack Trace</h3>
+        <pre style="
+          background:#f5f5f5;
+          padding:15px;
+          overflow:auto;
+        ">${error.stack || 'No disponible'}</pre>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
 }
