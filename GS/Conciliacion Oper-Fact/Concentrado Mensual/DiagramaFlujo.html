@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+
+<!-- Igual que en el modal de "Actividades Pendientes": los modales de Apps
+     Script pueden cargar librerías desde un CDN, así que Mermaid se carga
+     así en vez de incrustarlo -el archivo pesaría varios MB y no hace
+     falta guardarlo dentro del proyecto de Apps Script. -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+<style>
+  :root{
+    --bg:#F5F7FA;
+    --card:#FFFFFF;
+    --primario:#1F4E78;
+    --texto:#37474F;
+    --borde:#d7dde3;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    font-family:'Roboto', 'Segoe UI', Arial, sans-serif;
+    color:var(--texto);
+    height:100%;
+    overflow-y:auto;
+  }
+
+  .encabezado{
+    text-align:center;
+    padding:18px 20px 6px 20px;
+  }
+
+  .encabezado h1{
+    margin:0 0 4px 0;
+    font-size:18px;
+    color:var(--primario);
+  }
+
+  .encabezado p{
+    margin:0;
+    font-size:12px;
+    color:#667685;
+  }
+
+  .leyenda{
+    padding:0 20px 4px 20px;
+    font-size:11.5px;
+    color:#667685;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+  }
+
+  .leyenda span{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+
+  .punto{
+    width:11px;
+    height:11px;
+    border-radius:3px;
+    display:inline-block;
+  }
+
+  .contenedor{
+    padding:8px 14px 20px 14px;
+  }
+
+  .lienzo{
+    background:var(--card);
+    border:1px solid var(--borde);
+    border-radius:14px;
+    padding:14px;
+    overflow-x:auto;
+  }
+
+  .mermaid{
+    display:flex;
+    justify-content:center;
+  }
+</style>
+</head>
+<body>
+
+  <div class="encabezado">
+    <h1>Concentrado Conciliación Operación–Facturación — Flujo completo</h1>
+    <p>Del archivo Diario al Concentrado Mensual, y la creación automática del mes nuevo con el archivo Ancla</p>
+  </div>
+
+  <div class="leyenda">
+    <span><span class="punto" style="background:#bfe1f6;"></span> Archivos / hojas de datos</span>
+    <span><span class="punto" style="background:#c9ecec;"></span> Fórmulas automáticas (Sheets)</span>
+    <span><span class="punto" style="background:#ffe5a0;"></span> Acción del usuario</span>
+    <span><span class="punto" style="background:#d4edbc;"></span> Lógica en Apps Script</span>
+    <span><span class="punto" style="background:#ffd9b3;"></span> Archivo "Ancla" (IDs)</span>
+  </div>
+
+  <div class="contenedor">
+    <div class="lienzo">
+      <pre class="mermaid">
+flowchart TD
+
+  A["📁 Archivo Diario (día en curso)<br/>hojas: MOVS + DOCUMENTOS FACTURACION"]
+  B["🧑‍💼 Operación captura movimientos en 'MOVS'<br/>🧾 Facturación captura documentos en 'DOCUMENTOS FACTURACION'"]
+  C{{"∑ Fórmulas de conciliación (automáticas)<br/>CONTAR.SI.CONJUNTO + FILTER cruzando<br/>MOVS ⇄ DOCUMENTOS FACTURACION"}}
+  D["🏷️ Marca coincidencia movimiento ⇄ factura<br/>(columnas O/R en MOVS · X/Y en Doc. Facturación)"]
+  E{{"💳 ¿Documento a crédito (PPD)?"}}
+  F["📆 Fórmulas AC · AD · AF · AG · AH<br/>Pendiente / Pagada / Cancelada<br/>y días vencidos (Cobranza Vencida &gt; 90 días)"]
+  G["☑️ Usuario revisa y marca la casilla<br/>de 'conciliado' en cada fila lista"]
+  H["🖱️ Ejecuta la macro de envío al Concentrado<br/><i>Código.gs / ScriptDias.gs</i>"]
+  I{{"¿La fila quedó marcada<br/>como conciliada?"}}
+  J["✅ Se copia como dato plano (sin fórmulas)<br/>al Concentrado Mensual<br/>hojas DOCUMENTOS FACTURACION + MOVS"]
+  K["⏳ Se queda en el Diario<br/>pendiente para el día siguiente"]
+  L{{"💳 ¿Es una fila a crédito?"}}
+  M["🔑 Busca coincidencia en la hoja 'PPD'<br/>por llave columnas B + C"]
+  N["🔄 Actualiza monto y estatus<br/>Pendiente ⇄ Pagada en 'PPD'"]
+  O["📊 Archivo Concentrado Mensual<br/>DOCUMENTOS FACTURACION · MOVS · PPD · CONCENTRADO"]
+
+  P["▾ ▾ ▾  Inicio de mes: crear el Concentrado nuevo  ▾ ▾ ▾"]
+
+  Q["🖱️ Menú → 'Crear mes nuevo'<br/><i>CONCENTRADO.gs: crearMesNuevo()</i>"]
+  R["📌 Abre el archivo 'Ancla' (ID fijo en el código)<br/>hoja 'IDs' o 'IDs PRUEBA'"]
+  S["🔎 Busca por Nombre + Mes anterior:<br/>carpeta raíz (año) y carpeta del mes anterior"]
+  T["📁 Crea la carpeta del mes actual<br/>dentro de la carpeta raíz"]
+  U["📄 Copia (makeCopy) el Concentrado del mes anterior<br/>→ nuevo archivo del mes actual<br/><i>incluye este mismo script, atado al nuevo archivo</i>"]
+  V["🧹 Limpia DOCUMENTOS FACTURACION y MOVS<br/>del nuevo archivo (PPD/CONCENTRADO no se tocan)"]
+  W["📁 Crea la subcarpeta 'DIAS'<br/>dentro de la carpeta del mes actual"]
+  X["📦 Mueve 'CUADRE DE INGRESOS<br/>CONCENTRADO PROVISIONADAS' al mes actual"]
+  Y["♻️ Actualiza (upsert) en el Ancla:<br/>carpeta raíz · carpeta del mes · DIAS ·<br/>Concentrado nuevo · Provisionadas"]
+  Z["🚀 Listo para el nuevo mes<br/>el ciclo diario arranca en el archivo nuevo"]
+
+  A --> B --> C --> D --> E
+  E -- "Sí" --> F --> G
+  E -- "No" --> G
+  G --> H --> I
+  I -- "Sí" --> J --> L
+  I -- "No" --> K
+  K -.->|"día siguiente"| A
+  L -- "Sí" --> M --> N --> O
+  L -- "No" --> O
+  O --> P --> Q --> R --> S --> T --> U --> V --> W --> X --> Y --> Z
+
+  classDef origen fill:#bfe1f6,stroke:#0a53a8,color:#0a53a8,font-size:13px;
+  classDef formula fill:#c9ecec,stroke:#1c7a7a,color:#124f4f,font-size:13px;
+  classDef usuario fill:#ffe5a0,stroke:#8a6d1d,color:#473821,font-size:13px;
+  classDef script fill:#d4edbc,stroke:#2f7d4f,color:#11734b,font-size:13px;
+  classDef ancla fill:#ffd9b3,stroke:#b5651d,color:#7a3e0d,font-size:13px;
+  classDef separador fill:#eef1f4,stroke:#c3ccd4,color:#5b6b7a,font-size:11.5px;
+
+  class A,O origen;
+  class C,D,E,F formula;
+  class B,G,H,Q usuario;
+  class I,J,K,L,M,N,T,U,V,W,Z script;
+  class R,S,X,Y ancla;
+  class P separador;
+      </pre>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#ffffff",
+        primaryTextColor: "#37474F",
+        primaryBorderColor: "#1F4E78",
+        lineColor: "#8aa0b3",
+        fontFamily: "Roboto, Segoe UI, Arial, sans-serif"
+      },
+      flowchart: {
+        curve: "basis",
+        nodeSpacing: 26,
+        rankSpacing: 38
+      }
+    });
+  </script>
+
+</body>
+</html>
+
+## Relacionados
+
+- [[Concentrado Conciliacion Oper-Fact/Concentrado Mensual/CONCENTRADO.gs]] — documenta el proceso que implementa este script
+- [[Contexto General]] — contexto general del proceso diagramado aquí
